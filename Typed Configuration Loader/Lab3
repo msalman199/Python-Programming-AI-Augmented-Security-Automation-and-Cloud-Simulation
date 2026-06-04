@@ -1,0 +1,457 @@
+Typed Configuration Loader
+Prerequisites
+Basic Python programming knowledge (functions, classes, dictionaries)
+Understanding of data types and type hints
+Familiarity with JSON/YAML file formats
+Basic Linux command line skills
+Text editor experience (vim, nano, or VS Code)
+Learning Objectives
+By completing this lab, you will:
+
+Implement type-safe configuration loading mechanisms
+Validate configuration data against expected schemas
+Apply default values for missing configuration entries
+Detect and handle invalid or missing configuration values
+Build robust configuration management for production systems
+Environment Setup
+Al Nafi provides a bare-metal Linux machine. Click Start Lab to begin.
+
+Install Required Tools
+# Update package manager
+sudo apt update
+
+# Install Python 3 and pip
+sudo apt install -y python3 python3-pip python3-venv
+
+# Create project directory
+mkdir -p ~/config-loader-lab
+cd ~/config-loader-lab
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install required packages
+pip install pyyaml pydantic
+Task 1: Build Configuration Schema and Validator
+Step 1: Create Project Structure
+cd ~/config-loader-lab
+mkdir -p configs tests
+touch config_loader.py test_configs.py
+Step 2: Define Configuration Schema
+Create config_loader.py with the following starter code:
+
+from typing import Optional, Dict, Any
+from pydantic import BaseModel, Field, validator
+import yaml
+import json
+import os
+
+
+class DatabaseConfig(BaseModel):
+    """Database connection configuration"""
+    host: str = Field(default="localhost")
+    port: int = Field(default=5432, ge=1, le=65535)
+    username: str
+    password: str
+    database: str
+    max_connections: int = Field(default=10, ge=1, le=100)
+    
+    @validator('host')
+    def validate_host(cls, v):
+        """
+        TODO: Implement host validation
+        - Check if host is not empty
+        - Validate format (basic check for localhost or IP pattern)
+        """
+        pass
+
+
+class CacheConfig(BaseModel):
+    """Cache configuration"""
+    enabled: bool = Field(default=True)
+    ttl_seconds: int = Field(default=300, ge=0)
+    max_size_mb: int = Field(default=100, ge=1)
+    
+    # TODO: Add validator for max_size_mb to ensure it doesn't exceed 1024
+
+
+class LoggingConfig(BaseModel):
+    """Logging configuration"""
+    level: str = Field(default="INFO")
+    format: str = Field(default="json")
+    output_path: Optional[str] = Field(default="/var/log/app.log")
+    
+    @validator('level')
+    def validate_log_level(cls, v):
+        """
+        TODO: Validate log level
+        - Accept only: DEBUG, INFO, WARNING, ERROR, CRITICAL
+        - Convert to uppercase
+        - Raise ValueError if invalid
+        """
+        pass
+
+
+class AppConfig(BaseModel):
+    """Main application configuration"""
+    app_name: str
+    environment: str = Field(default="development")
+    debug: bool = Field(default=False)
+    database: DatabaseConfig
+    cache: CacheConfig = Field(default_factory=CacheConfig)
+    logging: LoggingConfig = Field(default_factory=LoggingConfig)
+    
+    @validator('environment')
+    def validate_environment(cls, v):
+        """
+        TODO: Validate environment
+        - Accept only: development, staging, production
+        - Raise ValueError if invalid
+        """
+        pass
+
+
+class ConfigLoader:
+    """Configuration loader with type validation"""
+    
+    def __init__(self, config_path: str):
+        self.config_path = config_path
+        self.config: Optional[AppConfig] = None
+    
+    def load(self) -> AppConfig:
+        """
+        Load and validate configuration from file
+        
+        TODO: Implement the following:
+        1. Check if config file exists
+        2. Determine file type (JSON or YAML) from extension
+        3. Read and parse the file
+        4. Validate using AppConfig model
+        5. Handle errors appropriately
+        
+        Returns:
+            AppConfig: Validated configuration object
+        
+        Raises:
+            FileNotFoundError: If config file doesn't exist
+            ValueError: If config is invalid
+        """
+        pass
+    
+    def _load_json(self, file_path: str) -> Dict[str, Any]:
+        """
+        TODO: Load JSON configuration file
+        - Open and read file
+        - Parse JSON
+        - Return dictionary
+        """
+        pass
+    
+    def _load_yaml(self, file_path: str) -> Dict[str, Any]:
+        """
+        TODO: Load YAML configuration file
+        - Open and read file
+        - Parse YAML
+        - Return dictionary
+        """
+        pass
+    
+    def validate_config(self, config_dict: Dict[str, Any]) -> AppConfig:
+        """
+        TODO: Validate configuration dictionary
+        - Create AppConfig instance from dictionary
+        - Handle validation errors with clear messages
+        - Return validated config
+        """
+        pass
+    
+    def get_config(self) -> AppConfig:
+        """Return loaded configuration"""
+        if self.config is None:
+            raise RuntimeError("Configuration not loaded. Call load() first.")
+        return self.config
+    
+    def reload(self) -> AppConfig:
+        """
+        TODO: Reload configuration from file
+        - Call load() again
+        - Update self.config
+        - Return new config
+        """
+        pass
+Step 3: Create Sample Configuration Files
+Create configs/valid_config.yaml:
+
+app_name: "MyApp"
+environment: "production"
+debug: false
+
+database:
+  host: "db.example.com"
+  port: 5432
+  username: "app_user"
+  password: "secure_password"
+  database: "app_db"
+  max_connections: 20
+
+cache:
+  enabled: true
+  ttl_seconds: 600
+  max_size_mb: 256
+
+logging:
+  level: "INFO"
+  format: "json"
+  output_path: "/var/log/myapp.log"
+Create configs/minimal_config.json:
+
+{
+  "app_name": "MinimalApp",
+  "database": {
+    "username": "user",
+    "password": "pass",
+    "database": "testdb"
+  }
+}
+Create configs/invalid_config.yaml:
+
+app_name: "InvalidApp"
+environment: "testing"
+database:
+  host: ""
+  port: 99999
+  username: "user"
+  password: "pass"
+  database: "db"
+Task 2: Implement Testing and Validation
+Step 1: Create Test Suite
+Create test_configs.py:
+
+import os
+import json
+import yaml
+from config_loader import ConfigLoader, AppConfig
+
+
+def test_valid_yaml_config():
+    """
+    TODO: Test loading valid YAML configuration
+    - Load configs/valid_config.yaml
+    - Assert all values are correctly loaded
+    - Verify types are correct
+    - Print success message
+    """
+    pass
+
+
+def test_minimal_config_with_defaults():
+    """
+    TODO: Test configuration with defaults
+    - Load configs/minimal_config.json
+    - Verify default values are applied for:
+      - cache settings
+      - logging settings
+      - database host and port
+    - Print which defaults were applied
+    """
+    pass
+
+
+def test_invalid_config_detection():
+    """
+    TODO: Test invalid configuration detection
+    - Attempt to load configs/invalid_config.yaml
+    - Catch validation errors
+    - Print specific validation failures
+    - Assert that appropriate errors are raised
+    """
+    pass
+
+
+def test_missing_required_fields():
+    """
+    TODO: Test missing required fields
+    - Create a config dict missing 'app_name'
+    - Create a config dict missing 'database.username'
+    - Attempt validation
+    - Verify appropriate errors are raised
+    """
+    pass
+
+
+def test_config_reload():
+    """
+    TODO: Test configuration reload functionality
+    - Load initial config
+    - Modify the config file
+    - Call reload()
+    - Verify new values are loaded
+    """
+    pass
+
+
+def run_all_tests():
+    """Run all test functions"""
+    tests = [
+        test_valid_yaml_config,
+        test_minimal_config_with_defaults,
+        test_invalid_config_detection,
+        test_missing_required_fields,
+        test_config_reload
+    ]
+    
+    print("Running Configuration Loader Tests\n" + "="*50)
+    
+    for test in tests:
+        try:
+            print(f"\nRunning: {test.__name__}")
+            test()
+            print(f"✓ {test.__name__} PASSED")
+        except Exception as e:
+            print(f"✗ {test.__name__} FAILED: {str(e)}")
+
+
+if __name__ == "__main__":
+    run_all_tests()
+Step 2: Implement Configuration Loader
+Complete the TODO sections in config_loader.py. Key implementation hints:
+
+For validators:
+
+Use if statements to check conditions
+Raise ValueError with descriptive messages
+Return the validated/transformed value
+For file loading:
+
+Use os.path.exists() to check file existence
+Use with open() for file operations
+Handle exceptions with try-except blocks
+For validation:
+
+Use AppConfig(**config_dict) to create validated instance
+Catch pydantic.ValidationError for detailed error messages
+Step 3: Test Your Implementation
+# Run the test suite
+python3 test_configs.py
+
+# Test individual config loading
+python3 -c "
+from config_loader import ConfigLoader
+loader = ConfigLoader('configs/valid_config.yaml')
+config = loader.load()
+print(f'App: {config.app_name}')
+print(f'DB Host: {config.database.host}')
+print(f'Cache Enabled: {config.cache.enabled}')
+"
+Step 4: Create a Practical Usage Example
+Create app_example.py:
+
+from config_loader import ConfigLoader
+import sys
+
+
+def main():
+    """
+    TODO: Implement main application logic
+    1. Accept config file path as command line argument
+    2. Load configuration using ConfigLoader
+    3. Print configuration summary
+    4. Demonstrate accessing nested config values
+    5. Handle errors gracefully
+    """
+    
+    if len(sys.argv) < 2:
+        print("Usage: python3 app_example.py <config_file>")
+        sys.exit(1)
+    
+    # TODO: Implement configuration loading and usage
+    pass
+
+
+if __name__ == "__main__":
+    main()
+Test the example:
+
+python3 app_example.py configs/valid_config.yaml
+python3 app_example.py configs/minimal_config.json
+python3 app_example.py configs/invalid_config.yaml
+Verification
+Verify Implementation Completeness
+Run these verification commands:
+
+# 1. Test valid configuration loading
+python3 -c "
+from config_loader import ConfigLoader
+loader = ConfigLoader('configs/valid_config.yaml')
+config = loader.load()
+assert config.app_name == 'MyApp'
+assert config.database.port == 5432
+assert config.cache.ttl_seconds == 600
+print('✓ Valid config loading works')
+"
+
+# 2. Test default values
+python3 -c "
+from config_loader import ConfigLoader
+loader = ConfigLoader('configs/minimal_config.json')
+config = loader.load()
+assert config.database.host == 'localhost'
+assert config.cache.enabled == True
+assert config.logging.level == 'INFO'
+print('✓ Default values applied correctly')
+"
+
+# 3. Test validation errors
+python3 -c "
+from config_loader import ConfigLoader
+try:
+    loader = ConfigLoader('configs/invalid_config.yaml')
+    config = loader.load()
+    print('✗ Should have raised validation error')
+except Exception as e:
+    print('✓ Validation errors detected correctly')
+"
+
+# 4. Run full test suite
+python3 test_configs.py
+Expected Output
+Your implementation should:
+
+Load YAML and JSON configuration files
+Apply default values for missing optional fields
+Validate all data types and constraints
+Reject invalid configurations with clear error messages
+Support configuration reloading
+Common Issues and Solutions
+Issue: Pydantic validation errors are unclear
+
+Solution: Catch ValidationError and iterate through e.errors() to print each error
+Issue: File not found errors
+
+Solution: Use absolute paths or verify current working directory
+Issue: YAML parsing fails
+
+Solution: Check YAML syntax, ensure proper indentation
+Conclusion
+You have successfully built a typed configuration loader that:
+
+Enforces type safety using Pydantic models
+Validates configuration data against defined schemas
+Applies sensible defaults for optional values
+Detects and reports invalid or missing configuration values
+Supports multiple configuration file formats (JSON, YAML)
+This pattern is essential for DevOps engineers managing application deployments across multiple environments. Type-safe configuration prevents runtime errors, ensures consistency, and makes configuration requirements explicit and self-documenting.
+
+Key Takeaways:
+
+Type validation catches errors before runtime
+Default values reduce configuration complexity
+Schema-based validation provides clear contracts
+Proper error handling improves debugging experience
+Next Steps:
+
+Add environment variable override support
+Implement configuration encryption for sensitive values
+Add configuration versioning and migration support
+Create configuration documentation generator from schemas
