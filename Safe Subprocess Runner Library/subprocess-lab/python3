@@ -1,0 +1,5 @@
+from safe_runner import SafeSubprocessRunner
+
+runner = SafeSubprocessRunner(timeout=2)
+result = runner.execute("sleep 5")
+print(f"Timeout handled: {'timeout' in result.get('error', '').lower()}")
