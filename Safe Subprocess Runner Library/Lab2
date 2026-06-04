@@ -1,0 +1,371 @@
+Safe Subprocess Runner Library
+Prerequisites
+Basic Python programming knowledge (functions, classes, exceptions)
+Understanding of command-line operations in Linux
+Familiarity with Python standard library concepts
+Basic knowledge of security principles
+Learning Objectives
+By completing this lab, you will:
+
+Execute system commands securely using Python's subprocess module
+Implement input validation to prevent command injection attacks
+Handle errors and timeouts in subprocess execution
+Build a reusable library for safe command execution
+Environment Setup
+Step 1: Start Your Lab Environment
+Click the "Start Lab" button to provision your Linux machine.
+
+Step 2: Connect and Prepare
+# Update package list
+sudo apt update
+
+# Install Python 3 and pip (if not already installed)
+sudo apt install -y python3 python3-pip python3-venv
+
+# Create project directory
+mkdir -p ~/subprocess-lab
+cd ~/subprocess-lab
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+Step 3: Create Project Structure
+# Create necessary files
+touch safe_runner.py
+touch test_runner.py
+mkdir -p logs
+Task 1: Build the Safe Subprocess Runner
+Step 1.1: Create the Base Runner Class
+Create safe_runner.py with the following starter code:
+
+import subprocess
+import shlex
+import logging
+from typing import Optional, List, Dict, Union
+from pathlib import Path
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('logs/subprocess.log'),
+        logging.StreamHandler()
+    ]
+)
+
+class SafeSubprocessRunner:
+    """
+    A secure wrapper for executing system commands with validation,
+    timeout handling, and error management.
+    """
+    
+    # Define allowed commands (whitelist approach)
+    ALLOWED_COMMANDS = {
+        'ls', 'cat', 'echo', 'pwd', 'whoami', 
+        'date', 'df', 'du', 'grep', 'wc'
+    }
+    
+    def __init__(self, timeout: int = 30, allowed_commands: Optional[set] = None):
+        """
+        Initialize the SafeSubprocessRunner.
+        
+        Args:
+            timeout: Maximum execution time in seconds
+            allowed_commands: Set of allowed command names (uses default if None)
+        """
+        self.timeout = timeout
+        self.allowed_commands = allowed_commands or self.ALLOWED_COMMANDS
+        self.logger = logging.getLogger(__name__)
+    
+    def validate_command(self, command: Union[str, List[str]]) -> List[str]:
+        """
+        Validate and parse the command to prevent injection attacks.
+        
+        Args:
+            command: Command string or list of arguments
+            
+        Returns:
+            List of validated command arguments
+            
+        Raises:
+            ValueError: If command is invalid or not allowed
+        
+        TODO: Implement the following:
+        1. Convert string commands to list using shlex.split()
+        2. Check if command list is empty
+        3. Extract base command name
+        4. Verify command is in allowed list
+        5. Check for dangerous patterns (;, &&, ||, |, >, <, `)
+        6. Return validated command list
+        """
+        pass
+    
+    def execute(self, command: Union[str, List[str]], 
+                cwd: Optional[str] = None,
+                capture_output: bool = True) -> Dict[str, any]:
+        """
+        Execute a command safely with timeout and error handling.
+        
+        Args:
+            command: Command to execute (string or list)
+            cwd: Working directory for command execution
+            capture_output: Whether to capture stdout/stderr
+            
+        Returns:
+            Dictionary containing:
+                - 'success': Boolean indicating success
+                - 'returncode': Process return code
+                - 'stdout': Standard output (if captured)
+                - 'stderr': Standard error (if captured)
+                - 'error': Error message (if failed)
+        
+        TODO: Implement the following:
+        1. Validate the command using validate_command()
+        2. Log the execution attempt
+        3. Use subprocess.run() with appropriate parameters:
+           - Set timeout
+           - Capture output if requested
+           - Set text=True for string output
+           - Use check=False to handle errors manually
+        4. Handle TimeoutExpired exception
+        5. Handle other exceptions
+        6. Return structured result dictionary
+        """
+        pass
+    
+    def execute_pipeline(self, commands: List[Union[str, List[str]]]) -> Dict[str, any]:
+        """
+        Execute multiple commands in sequence (pipeline).
+        
+        Args:
+            commands: List of commands to execute in order
+            
+        Returns:
+            Dictionary with results from all commands
+        
+        TODO: Implement the following:
+        1. Validate all commands first
+        2. Execute commands sequentially
+        3. Pass output from one command as context to next
+        4. Stop on first failure
+        5. Return combined results
+        """
+        pass
+Step 1.2: Implement Command Validation
+Complete the validate_command() method:
+
+Hints:
+
+Use shlex.split() for safe string parsing
+Check for shell metacharacters that could enable injection
+Validate against the whitelist of allowed commands
+Consider path traversal attempts in arguments
+Step 1.3: Implement Command Execution
+Complete the execute() method:
+
+Key considerations:
+
+Use subprocess.run() instead of older methods
+Always set a timeout to prevent hanging
+Capture both stdout and stderr
+Handle exceptions gracefully
+Return consistent result format
+Step 1.4: Implement Pipeline Execution (Optional Challenge)
+Complete the execute_pipeline() method for executing multiple commands.
+
+Task 2: Test and Validate the Runner
+Step 2.1: Create Test Script
+Create test_runner.py:
+
+#!/usr/bin/env python3
+from safe_runner import SafeSubprocessRunner
+
+def test_basic_execution():
+    """Test basic command execution."""
+    runner = SafeSubprocessRunner(timeout=10)
+    
+    # TODO: Test valid commands
+    # Test 1: Execute 'ls -la'
+    # Test 2: Execute 'echo "Hello World"'
+    # Test 3: Execute 'pwd'
+    
+    print("Basic execution tests:")
+    # Implement your tests here
+    pass
+
+def test_validation():
+    """Test input validation and security."""
+    runner = SafeSubprocessRunner(timeout=10)
+    
+    # TODO: Test invalid commands
+    # Test 1: Try command injection with '; rm -rf /'
+    # Test 2: Try piping with '|'
+    # Test 3: Try command not in whitelist
+    
+    print("\nValidation tests:")
+    # Implement your tests here
+    pass
+
+def test_timeout():
+    """Test timeout handling."""
+    runner = SafeSubprocessRunner(timeout=2)
+    
+    # TODO: Test timeout
+    # Test: Execute 'sleep 5' with 2-second timeout
+    
+    print("\nTimeout tests:")
+    # Implement your tests here
+    pass
+
+def test_error_handling():
+    """Test error handling."""
+    runner = SafeSubprocessRunner(timeout=10)
+    
+    # TODO: Test error scenarios
+    # Test 1: Non-existent file with 'cat'
+    # Test 2: Invalid arguments
+    
+    print("\nError handling tests:")
+    # Implement your tests here
+    pass
+
+if __name__ == "__main__":
+    test_basic_execution()
+    test_validation()
+    test_timeout()
+    test_error_handling()
+Step 2.2: Implement and Run Tests
+Complete the test functions and execute:
+
+python3 test_runner.py
+Step 2.3: Create Practical Examples
+Create examples.py to demonstrate real-world usage:
+
+#!/usr/bin/env python3
+from safe_runner import SafeSubprocessRunner
+
+def example_system_info():
+    """Gather system information safely."""
+    runner = SafeSubprocessRunner(timeout=10)
+    
+    # TODO: Implement system info gathering
+    # 1. Get current user
+    # 2. Get current directory
+    # 3. Get disk usage
+    # 4. Display results in formatted way
+    pass
+
+def example_file_operations():
+    """Perform safe file operations."""
+    runner = SafeSubprocessRunner(timeout=10)
+    
+    # TODO: Implement file operations
+    # 1. List files in current directory
+    # 2. Count lines in a file
+    # 3. Search for pattern in file
+    pass
+
+if __name__ == "__main__":
+    print("=== System Information ===")
+    example_system_info()
+    
+    print("\n=== File Operations ===")
+    example_file_operations()
+Verification
+Step 1: Verify Security Features
+Test that your implementation prevents common attacks:
+
+# Create a test script
+cat > verify_security.py << 'EOF'
+from safe_runner import SafeSubprocessRunner
+
+runner = SafeSubprocessRunner()
+
+# These should all fail safely
+dangerous_commands = [
+    "ls; rm -rf /tmp/test",
+    "cat /etc/passwd && echo 'hacked'",
+    "echo test | grep test",
+    "rm -rf /",
+    "cat /etc/passwd"
+]
+
+for cmd in dangerous_commands:
+    result = runner.execute(cmd)
+    print(f"Command: {cmd}")
+    print(f"Blocked: {not result['success']}\n")
+EOF
+
+python3 verify_security.py
+Expected: All dangerous commands should be blocked.
+
+Step 2: Verify Timeout Functionality
+# Test timeout
+python3 << 'EOF'
+from safe_runner import SafeSubprocessRunner
+
+runner = SafeSubprocessRunner(timeout=2)
+result = runner.execute("sleep 5")
+print(f"Timeout handled: {'timeout' in result.get('error', '').lower()}")
+EOF
+Expected: Command should timeout after 2 seconds.
+
+Step 3: Verify Logging
+# Check logs were created
+cat logs/subprocess.log
+Expected: Log file should contain execution records.
+
+Step 4: Run Complete Test Suite
+python3 test_runner.py
+Expected output should show:
+
+Successful execution of allowed commands
+Blocked execution of dangerous commands
+Proper timeout handling
+Graceful error handling
+Troubleshooting
+Issue: "Module not found" errors
+
+Solution: Ensure virtual environment is activated: source venv/bin/activate
+Issue: Permission denied errors
+
+Solution: Check file permissions: chmod +x test_runner.py
+Issue: Timeout not working
+
+Solution: Verify timeout parameter is passed to subprocess.run()
+Issue: Commands not being blocked
+
+Solution: Review validation logic and ensure whitelist is properly checked
+Issue: Logging not working
+
+Solution: Verify logs directory exists: mkdir -p logs
+Conclusion
+You have successfully built a secure subprocess runner library that:
+
+Validates commands against a whitelist to prevent injection attacks
+Handles timeouts to prevent hanging processes
+Manages errors gracefully with structured output
+Logs all execution attempts for auditing
+This library demonstrates critical DevOps security practices including input validation, timeout management, and defensive programming. These patterns are essential for building secure automation tools and CI/CD pipelines.
+
+Key Takeaways:
+
+Never trust user input when executing system commands
+Always use whitelisting over blacklisting for security
+Implement timeouts for all subprocess calls
+Log security-relevant events for auditing
+Use subprocess.run() with proper parameters for modern Python
+Next Steps:
+
+Extend the allowed commands list for your use case
+Add support for environment variable validation
+Implement command output sanitization
+Create a configuration file for allowed commands
+Add metrics collection for command execution times
+Cleanup
+# Deactivate virtual environment
+deactivate
+
+# Optional: Remove lab files
+# cd ~ && rm -rf subprocess-lab
