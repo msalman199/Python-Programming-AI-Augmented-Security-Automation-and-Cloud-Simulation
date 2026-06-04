@@ -1,0 +1,440 @@
+Build opsctl CLI Foundation
+Prerequisites
+Basic understanding of Python programming
+Familiarity with command-line interfaces
+Knowledge of Git version control
+Experience with Linux terminal commands
+Understanding of function definitions and argument parsing
+Learning Objectives
+By completing this lab, you will:
+
+Design and implement a structured CLI tool architecture
+Parse and handle command-line arguments effectively
+Create modular command implementations
+Implement help documentation and version management
+Apply best practices for CLI tool development
+Environment Setup
+Al Nafi provides a bare-metal Linux machine. Click Start Lab to access your environment.
+
+Install Required Tools
+# Update package manager
+sudo apt update
+
+# Install Python 3 and pip
+sudo apt install -y python3 python3-pip python3-venv
+
+# Verify installation
+python3 --version
+pip3 --version
+Create Project Structure
+# Create project directory
+mkdir -p ~/opsctl-project
+cd ~/opsctl-project
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Create project structure
+mkdir -p opsctl/{commands,utils}
+touch opsctl/__init__.py
+touch opsctl/commands/__init__.py
+touch opsctl/utils/__init__.py
+touch opsctl/cli.py
+touch opsctl/version.py
+touch setup.py
+touch README.md
+Task 1: Design CLI Structure and Argument Handling
+Step 1: Create Version Module
+Create opsctl/version.py:
+
+"""Version information for opsctl."""
+
+__version__ = "0.1.0"
+__author__ = "DevOps Team"
+__description__ = "Operational CLI tool for system management"
+Step 2: Implement Core CLI Framework
+Create opsctl/cli.py:
+
+#!/usr/bin/env python3
+"""
+Main CLI entry point for opsctl.
+Handles argument parsing and command routing.
+"""
+
+import argparse
+import sys
+from opsctl.version import __version__, __description__
+from opsctl.commands import status, deploy, config
+
+
+def create_parser():
+    """
+    Create and configure the argument parser.
+    
+    Returns:
+        argparse.ArgumentParser: Configured parser with subcommands
+    """
+    parser = argparse.ArgumentParser(
+        prog='opsctl',
+        description=__description__,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    
+    # TODO: Add global arguments (--version, --verbose)
+    
+    # TODO: Create subparsers for commands
+    
+    # TODO: Add 'status' subcommand with appropriate arguments
+    
+    # TODO: Add 'deploy' subcommand with required parameters
+    
+    # TODO: Add 'config' subcommand with set/get operations
+    
+    return parser
+
+
+def main():
+    """
+    Main entry point for the CLI application.
+    Parses arguments and executes appropriate commands.
+    """
+    parser = create_parser()
+    args = parser.parse_args()
+    
+    # TODO: Handle version flag
+    
+    # TODO: Route to appropriate command handler based on subcommand
+    
+    # TODO: Handle case when no command is provided
+    
+    pass
+
+
+if __name__ == '__main__':
+    main()
+Step 3: Implement Command Modules
+Create opsctl/commands/__init__.py:
+
+"""Command modules for opsctl."""
+
+from . import status
+from . import deploy
+from . import config
+
+__all__ = ['status', 'deploy', 'config']
+Create opsctl/commands/status.py:
+
+"""Status command implementation."""
+
+def execute(args):
+    """
+    Execute the status command.
+    
+    Args:
+        args: Parsed command-line arguments
+    
+    Returns:
+        int: Exit code (0 for success, non-zero for failure)
+    """
+    # TODO: Implement system status check
+    # - Check service health
+    # - Display resource usage
+    # - Show last deployment info
+    pass
+
+
+def add_parser(subparsers):
+    """
+    Add status command parser.
+    
+    Args:
+        subparsers: Subparser object from argparse
+    """
+    # TODO: Create parser for 'status' command
+    # TODO: Add optional --service argument
+    # TODO: Add --format argument (text/json)
+    pass
+Create opsctl/commands/deploy.py:
+
+"""Deploy command implementation."""
+
+def execute(args):
+    """
+    Execute the deploy command.
+    
+    Args:
+        args: Parsed command-line arguments
+    
+    Returns:
+        int: Exit code
+    """
+    # TODO: Implement deployment logic
+    # - Validate application name
+    # - Check environment parameter
+    # - Simulate deployment process
+    # - Display progress and results
+    pass
+
+
+def add_parser(subparsers):
+    """
+    Add deploy command parser.
+    
+    Args:
+        subparsers: Subparser object from argparse
+    """
+    # TODO: Create parser for 'deploy' command
+    # TODO: Add required --app argument
+    # TODO: Add required --env argument (dev/staging/prod)
+    # TODO: Add optional --version argument
+    pass
+Create opsctl/commands/config.py:
+
+"""Configuration command implementation."""
+
+import json
+import os
+
+
+CONFIG_FILE = os.path.expanduser('~/.opsctl/config.json')
+
+
+def execute(args):
+    """
+    Execute the config command.
+    
+    Args:
+        args: Parsed command-line arguments
+    
+    Returns:
+        int: Exit code
+    """
+    # TODO: Implement config get/set operations
+    # - Handle 'get' action to retrieve config values
+    # - Handle 'set' action to store config values
+    # - Create config directory if needed
+    # - Read/write JSON configuration file
+    pass
+
+
+def add_parser(subparsers):
+    """
+    Add config command parser.
+    
+    Args:
+        subparsers: Subparser object from argparse
+    """
+    # TODO: Create parser for 'config' command
+    # TODO: Add subparsers for 'get' and 'set' actions
+    # TODO: Add 'key' argument for both actions
+    # TODO: Add 'value' argument for 'set' action
+    pass
+Step 4: Create Utility Functions
+Create opsctl/utils/helpers.py:
+
+"""Helper utilities for opsctl."""
+
+import sys
+
+
+def print_success(message):
+    """Print success message in green."""
+    # TODO: Implement colored output for success
+    pass
+
+
+def print_error(message):
+    """Print error message in red."""
+    # TODO: Implement colored output for errors
+    pass
+
+
+def print_info(message):
+    """Print info message in blue."""
+    # TODO: Implement colored output for info
+    pass
+
+
+def validate_environment(env):
+    """
+    Validate environment parameter.
+    
+    Args:
+        env: Environment string to validate
+    
+    Returns:
+        bool: True if valid, False otherwise
+    """
+    # TODO: Check if env is in allowed list
+    pass
+Step 5: Create Setup Configuration
+Create setup.py:
+
+"""Setup configuration for opsctl."""
+
+from setuptools import setup, find_packages
+from opsctl.version import __version__, __description__, __author__
+
+setup(
+    name='opsctl',
+    version=__version__,
+    description=__description__,
+    author=__author__,
+    packages=find_packages(),
+    entry_points={
+        'console_scripts': [
+            'opsctl=opsctl.cli:main',
+        ],
+    },
+    python_requires='>=3.6',
+    classifiers=[
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: Developers',
+        'Topic :: System :: Systems Administration',
+        'Programming Language :: Python :: 3',
+    ],
+)
+Task 2: Implement and Test CLI Commands
+Step 1: Complete the Implementation
+Now implement the TODO sections in the files created above. Here are hints for each:
+
+cli.py hints:
+
+Use parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
+Create subparsers with subparsers = parser.add_subparsers(dest='command', help='Available commands')
+Import and call add_parser() from each command module
+Use hasattr(args, 'func') to check if a command was selected
+status.py hints:
+
+Use psutil library or read /proc files for system info
+Format output based on args.format (text or JSON)
+Return 0 on success
+deploy.py hints:
+
+Validate required arguments are present
+Print deployment steps with progress indicators
+Use time.sleep() to simulate deployment time
+config.py hints:
+
+Use os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
+Use json.load() and json.dump() for file operations
+Handle file not found exceptions gracefully
+Step 2: Install the CLI Tool
+# Ensure virtual environment is activated
+source ~/opsctl-project/venv/bin/activate
+
+# Install in development mode
+cd ~/opsctl-project
+pip install -e .
+Step 3: Test Basic Functionality
+# Test version flag
+opsctl --version
+
+# Test help output
+opsctl --help
+opsctl status --help
+opsctl deploy --help
+opsctl config --help
+Step 4: Test Commands
+# Test status command
+opsctl status
+opsctl status --format json
+
+# Test config commands
+opsctl config set api_endpoint https://api.example.com
+opsctl config get api_endpoint
+
+# Test deploy command
+opsctl deploy --app myapp --env dev
+opsctl deploy --app webapp --env prod --version 1.2.3
+Step 5: Add Error Handling
+Test error scenarios:
+
+# Test invalid environment
+opsctl deploy --app test --env invalid
+
+# Test missing required arguments
+opsctl deploy --app test
+
+# Test non-existent config key
+opsctl config get nonexistent_key
+Verification
+Verify Installation
+# Check opsctl is in PATH
+which opsctl
+
+# Verify version output
+opsctl --version | grep "0.1.0"
+Verify Command Structure
+# Verify all commands are listed
+opsctl --help | grep -E "(status|deploy|config)"
+
+# Verify subcommand help works
+opsctl status --help
+opsctl deploy --help
+opsctl config --help
+Verify Functionality
+# Test configuration persistence
+opsctl config set test_key test_value
+opsctl config get test_key | grep "test_value"
+
+# Verify config file creation
+ls -la ~/.opsctl/config.json
+cat ~/.opsctl/config.json
+
+# Test status command execution
+opsctl status
+echo $?  # Should return 0
+
+# Test deploy command with valid parameters
+opsctl deploy --app testapp --env dev
+echo $?  # Should return 0
+Verify Error Handling
+# Test invalid command
+opsctl invalid_command 2>&1 | grep -i "invalid"
+
+# Test missing required argument
+opsctl deploy 2>&1 | grep -i "required"
+Troubleshooting
+Issue: Command not found after installation
+
+Ensure virtual environment is activated: source ~/opsctl-project/venv/bin/activate
+Reinstall: pip install -e .
+Issue: Import errors
+
+Verify all __init__.py files exist
+Check Python path: python3 -c "import sys; print(sys.path)"
+Issue: Permission denied on config file
+
+Check directory permissions: ls -la ~/.opsctl/
+Create directory manually: mkdir -p ~/.opsctl && chmod 755 ~/.opsctl
+Issue: Arguments not parsing correctly
+
+Verify subparser destination is set: dest='command'
+Check that set_defaults(func=execute) is called for each subcommand
+Conclusion
+You have successfully built a foundational CLI tool with:
+
+Structured command architecture using argparse
+Multiple subcommands (status, deploy, config)
+Argument parsing and validation
+Help documentation and version management
+Configuration persistence
+Error handling
+This CLI foundation can be extended with additional commands, enhanced error handling, logging, and integration with real operational systems. The modular design allows easy addition of new commands by creating new modules in the commands directory.
+
+Key Takeaways:
+
+CLI tools benefit from clear command hierarchies
+Argument parsing libraries simplify user input handling
+Modular design enables maintainable and extensible code
+Help documentation is crucial for user experience
+Configuration management improves tool usability
+Next Steps:
+
+Add logging functionality
+Implement authentication mechanisms
+Create integration tests
+Add command aliases and shortcuts
+Implement output formatting options (JSON, YAML, table)
