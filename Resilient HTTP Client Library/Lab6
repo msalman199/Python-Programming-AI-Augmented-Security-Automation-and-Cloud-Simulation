@@ -1,0 +1,420 @@
+Resilient HTTP Client Library
+Prerequisites
+Basic Python programming knowledge
+Understanding of HTTP requests and responses
+Familiarity with command-line operations
+Basic knowledge of REST APIs
+Understanding of exceptions and error handling in Python
+Learning Objectives
+By completing this lab, you will:
+
+Implement retry logic for failed HTTP requests
+Configure exponential backoff strategies
+Set appropriate timeouts for network operations
+Handle various network errors gracefully
+Build a production-ready HTTP client wrapper
+Environment Setup
+Step 1: Verify Python Installation
+python3 --version
+Expected output: Python 3.8 or higher
+
+Step 2: Install Required Packages
+pip3 install requests
+Step 3: Create Project Directory
+mkdir -p ~/resilient-http-lab
+cd ~/resilient-http-lab
+Task 1: Build the Resilient HTTP Client
+Step 1: Create the Base Client Structure
+Create a file named resilient_client.py:
+
+import requests
+import time
+from typing import Optional, Dict, Any
+from requests.exceptions import RequestException, Timeout, ConnectionError
+
+class ResilientHTTPClient:
+    """
+    A resilient HTTP client with retry logic, backoff, and timeout handling.
+    """
+    
+    def __init__(
+        self,
+        max_retries: int = 3,
+        base_timeout: int = 5,
+        backoff_factor: float = 2.0
+    ):
+        """
+        Initialize the resilient HTTP client.
+        
+        Args:
+            max_retries: Maximum number of retry attempts
+            base_timeout: Base timeout in seconds for requests
+            backoff_factor: Multiplier for exponential backoff
+        """
+        self.max_retries = max_retries
+        self.base_timeout = base_timeout
+        self.backoff_factor = backoff_factor
+        self.session = requests.Session()
+    
+    def _calculate_backoff(self, attempt: int) -> float:
+        """
+        Calculate exponential backoff delay.
+        
+        Args:
+            attempt: Current retry attempt number (0-indexed)
+        
+        Returns:
+            Delay in seconds
+        
+        TODO: Implement exponential backoff calculation
+        Formula: base_delay * (backoff_factor ^ attempt)
+        Use base_delay = 1 second
+        """
+        pass
+    
+    def _should_retry(self, exception: Exception, attempt: int) -> bool:
+        """
+        Determine if request should be retried based on exception type.
+        
+        Args:
+            exception: The exception that occurred
+            attempt: Current attempt number
+        
+        Returns:
+            True if should retry, False otherwise
+        
+        TODO: Implement retry logic
+        - Retry on Timeout, ConnectionError
+        - Don't retry if max_retries exceeded
+        - Don't retry on 4xx client errors (except 429)
+        """
+        pass
+    
+    def get(
+        self,
+        url: str,
+        params: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, str]] = None
+    ) -> requests.Response:
+        """
+        Perform a GET request with retry logic.
+        
+        Args:
+            url: Target URL
+            params: Query parameters
+            headers: Request headers
+        
+        Returns:
+            Response object
+        
+        Raises:
+            RequestException: If all retries fail
+        
+        TODO: Implement the resilient GET request
+        - Loop through retry attempts
+        - Apply timeout
+        - Catch exceptions and determine if retry needed
+        - Apply backoff delay between retries
+        - Log retry attempts (use print for simplicity)
+        """
+        pass
+    
+    def post(
+        self,
+        url: str,
+        data: Optional[Dict[str, Any]] = None,
+        json: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, str]] = None
+    ) -> requests.Response:
+        """
+        Perform a POST request with retry logic.
+        
+        Args:
+            url: Target URL
+            data: Form data
+            json: JSON payload
+            headers: Request headers
+        
+        Returns:
+            Response object
+        
+        TODO: Implement similar to GET but for POST requests
+        Note: Be careful with retrying POST - consider idempotency
+        """
+        pass
+    
+    def close(self):
+        """Close the session."""
+        self.session.close()
+Step 2: Create Test Script
+Create test_client.py:
+
+from resilient_client import ResilientHTTPClient
+import json
+
+def test_successful_request():
+    """Test basic successful request."""
+    print("\n=== Test 1: Successful Request ===")
+    client = ResilientHTTPClient(max_retries=3, base_timeout=10)
+    
+    try:
+        # TODO: Make a GET request to https://httpbin.org/get
+        # Print status code and response JSON
+        pass
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        client.close()
+
+def test_timeout_handling():
+    """Test timeout with retry."""
+    print("\n=== Test 2: Timeout Handling ===")
+    # TODO: Create client with short timeout (1 second)
+    # Try to request https://httpbin.org/delay/5
+    # Observe retry behavior
+    pass
+
+def test_retry_on_failure():
+    """Test retry on connection failure."""
+    print("\n=== Test 3: Retry on Failure ===")
+    # TODO: Create client
+    # Try to request invalid URL: http://invalid-domain-12345.com
+    # Observe retry attempts and backoff
+    pass
+
+def test_post_request():
+    """Test POST request with data."""
+    print("\n=== Test 4: POST Request ===")
+    # TODO: Create client
+    # POST to https://httpbin.org/post with JSON data
+    # Print response
+    pass
+
+if __name__ == "__main__":
+    test_successful_request()
+    test_timeout_handling()
+    test_retry_on_failure()
+    test_post_request()
+Step 3: Implementation Hints
+Key concepts to implement:
+
+Exponential Backoff Formula:
+
+delay = base_delay * (backoff_factor ** attempt)
+# Example: 1 * (2 ** 0) = 1s, 1 * (2 ** 1) = 2s, 1 * (2 ** 2) = 4s
+Retry Decision Logic:
+
+Retry on: Timeout, ConnectionError, HTTP 429, 500, 502, 503, 504
+Don't retry on: HTTP 4xx (except 429), successful responses
+Check attempt count against max_retries
+Request Pattern:
+
+for attempt in range(self.max_retries + 1):
+    try:
+        # Make request with timeout
+        # Check response status
+        # Return if successful
+    except Exception as e:
+        # Determine if should retry
+        # Apply backoff if retrying
+        # Raise if final attempt
+Task 2: Add Advanced Features
+Step 1: Implement Circuit Breaker Pattern
+Create circuit_breaker.py:
+
+from enum import Enum
+from datetime import datetime, timedelta
+
+class CircuitState(Enum):
+    CLOSED = "closed"      # Normal operation
+    OPEN = "open"          # Failing, reject requests
+    HALF_OPEN = "half_open"  # Testing if recovered
+
+class CircuitBreaker:
+    """
+    Implements circuit breaker pattern to prevent cascading failures.
+    """
+    
+    def __init__(
+        self,
+        failure_threshold: int = 5,
+        recovery_timeout: int = 60,
+        success_threshold: int = 2
+    ):
+        """
+        Initialize circuit breaker.
+        
+        Args:
+            failure_threshold: Failures before opening circuit
+            recovery_timeout: Seconds before attempting recovery
+            success_threshold: Successes needed to close circuit
+        """
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.success_threshold = success_threshold
+        
+        # TODO: Initialize state tracking variables
+        # - current state (CLOSED)
+        # - failure count
+        # - success count
+        # - last failure time
+        pass
+    
+    def call(self, func, *args, **kwargs):
+        """
+        Execute function with circuit breaker protection.
+        
+        TODO: Implement circuit breaker logic
+        - If OPEN: check if recovery_timeout passed, transition to HALF_OPEN or raise
+        - If HALF_OPEN: allow call, track success/failure
+        - If CLOSED: allow call, track failures
+        - Update state based on thresholds
+        """
+        pass
+    
+    def _on_success(self):
+        """Handle successful call."""
+        # TODO: Reset failure count, increment success count if HALF_OPEN
+        pass
+    
+    def _on_failure(self):
+        """Handle failed call."""
+        # TODO: Increment failure count, open circuit if threshold reached
+        pass
+Step 2: Integrate Circuit Breaker
+Update resilient_client.py to include circuit breaker:
+
+from circuit_breaker import CircuitBreaker
+
+class ResilientHTTPClient:
+    def __init__(self, max_retries=3, base_timeout=5, backoff_factor=2.0, use_circuit_breaker=False):
+        # ... existing code ...
+        self.circuit_breaker = CircuitBreaker() if use_circuit_breaker else None
+    
+    def get(self, url, params=None, headers=None):
+        """
+        TODO: Wrap existing get logic with circuit breaker if enabled
+        if self.circuit_breaker:
+            return self.circuit_breaker.call(self._get_with_retry, url, params, headers)
+        else:
+            return self._get_with_retry(url, params, headers)
+        """
+        pass
+Step 3: Create Comprehensive Test
+Create test_advanced.py:
+
+from resilient_client import ResilientHTTPClient
+import time
+
+def test_circuit_breaker():
+    """Test circuit breaker functionality."""
+    print("\n=== Circuit Breaker Test ===")
+    
+    # TODO: Create client with circuit breaker enabled
+    # Make multiple requests to failing endpoint
+    # Observe circuit opening after threshold
+    # Wait for recovery timeout
+    # Observe circuit attempting recovery
+    pass
+
+def test_rate_limiting():
+    """Test handling of rate limits (HTTP 429)."""
+    print("\n=== Rate Limiting Test ===")
+    
+    # TODO: Make requests that might hit rate limits
+    # Observe retry behavior with backoff
+    pass
+
+if __name__ == "__main__":
+    test_circuit_breaker()
+    test_rate_limiting()
+Verification
+Step 1: Test Basic Functionality
+cd ~/resilient-http-lab
+python3 test_client.py
+Expected Output:
+
+Test 1: Successful response with status 200
+Test 2: Multiple retry attempts with increasing delays
+Test 3: Retry attempts followed by final exception
+Test 4: Successful POST with echoed data
+Step 2: Verify Retry Logic
+Create a simple verification script verify.py:
+
+from resilient_client import ResilientHTTPClient
+import time
+
+client = ResilientHTTPClient(max_retries=3, base_timeout=2)
+
+# Test 1: Verify backoff calculation
+print("Backoff delays:")
+for i in range(4):
+    delay = client._calculate_backoff(i)
+    print(f"  Attempt {i}: {delay}s")
+
+# Test 2: Verify successful request
+try:
+    response = client.get("https://httpbin.org/status/200")
+    print(f"\nSuccess test: Status {response.status_code}")
+except Exception as e:
+    print(f"Failed: {e}")
+
+client.close()
+Run verification:
+
+python3 verify.py
+Step 3: Test Error Scenarios
+python3 test_advanced.py
+Check for:
+
+Exponential backoff delays (1s, 2s, 4s)
+Proper exception handling
+Circuit breaker state transitions
+Timeout enforcement
+Troubleshooting
+Issue: Import errors
+Solution:
+
+# Ensure all files are in the same directory
+ls -la ~/resilient-http-lab/
+# Should show: resilient_client.py, circuit_breaker.py, test_client.py
+Issue: Requests timing out immediately
+Solution:
+
+Increase base_timeout value
+Check network connectivity: curl https://httpbin.org/get
+Verify DNS resolution: nslookup httpbin.org
+Issue: Circuit breaker not working
+Solution:
+
+Add debug print statements in state transitions
+Verify failure_threshold is being reached
+Check datetime calculations for recovery_timeout
+Issue: Backoff not exponential
+Solution:
+
+# Verify calculation
+delay = 1 * (2 ** attempt)  # Should be: 1, 2, 4, 8...
+print(f"Attempt {attempt}: delay={delay}")
+Conclusion
+You have successfully built a production-ready resilient HTTP client library with:
+
+Retry Logic: Automatically retries failed requests with configurable attempts
+Exponential Backoff: Implements increasing delays between retries to avoid overwhelming services
+Timeout Handling: Prevents indefinite waiting with configurable timeouts
+Error Classification: Distinguishes between retryable and non-retryable errors
+Circuit Breaker: Prevents cascading failures in distributed systems
+Real-World Applications:
+
+Microservices communication in DevOps pipelines
+API integrations with external services
+Monitoring and alerting systems
+CI/CD pipeline HTTP operations
+Cloud infrastructure automation
+Key Takeaways:
+
+Network failures are inevitable; design for resilience
+Exponential backoff prevents service overload
+Circuit breakers protect system stability
+Proper timeout configuration balances responsiveness and reliability
+This resilient client pattern is essential for DevOps engineers building reliable distributed systems and automation tools.
