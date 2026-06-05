@@ -38,3 +38,23 @@ def get_user(user_id):
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000, debug=True)
+
+def health_check(self):
+    try:
+        response = self.session.get(f"{self.base_url}/health")
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        click.echo("Error: Cannot connect to API server", err=True)
+        sys.exit(1)
+    except requests.exceptions.RequestException as e:
+        click.echo(f"Error: {str(e)}", err=True)
+        sys.exit(1)
+@cli.command()
+def health():
+    """Check API server health"""
+    client = APIClient(API_BASE_URL)
+    result = client.health_check()
+    click.echo(f"Status: {result.get('status')}")
+    click.echo(f"Service: {result.get('service')}")
+
