@@ -28,3 +28,10 @@ repos:
     hooks:
       - id: bandit
         args: ['-ll', '-i']
+  - repo: local
+    hooks:
+      - id: check-todos
+        name: Check for TODO comments
+        entry: bash -c 'if grep -r "TODO" --include="*.py" .; then echo "TODO comments found. Please resolve before committing."; exit 1; fi'
+        language: system
+        pass_filenames: false
