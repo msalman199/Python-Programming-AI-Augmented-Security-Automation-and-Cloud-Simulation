@@ -25,3 +25,8 @@ class HealthResponse(BaseModel):
     status: str
     timestamp: datetime
     service: str = "FastAPI Policy Service"
+# Example structure for PolicyCheckRequest
+class PolicyCheckRequest(BaseModel):
+    request_size: int = Field(..., description="Request size in bytes")
+    method: str = Field(..., description="HTTP method")
+    user_id: str = Field(..., description="User identifier")
