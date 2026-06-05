@@ -1,0 +1,610 @@
+ Migration and Rollback Runbook
+Prerequisites
+Basic understanding of relational databases (SQL)
+Familiarity with Linux command line
+Basic knowledge of version control (Git)
+Understanding of database schema concepts
+Experience with shell scripting basics
+Learning Objectives
+By completing this lab, you will:
+
+Create structured database migration procedures
+Develop comprehensive rollback strategies
+Implement validation checks for database changes
+Document migration workflows for production environments
+Practice safe database change management
+Environment Setup
+Initial System Configuration
+Update system packages:
+sudo apt update
+Install required tools:
+sudo apt install -y postgresql postgresql-contrib git
+Start PostgreSQL service:
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+Create working directory:
+mkdir -p ~/migration-lab
+cd ~/migration-lab
+Initialize Git repository:
+git init
+git config user.name "Lab User"
+git config user.email "lab@example.com"
+Task 1: Create Migration Framework
+Step 1: Set Up Database Environment
+Switch to postgres user and create database:
+sudo -u postgres psql -c "CREATE DATABASE inventory_db;"
+sudo -u postgres psql -c "CREATE USER labuser WITH PASSWORD 'labpass123';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE inventory_db TO labuser;"
+Create environment configuration file:
+cat > db_config.sh << 'EOF'
+#!/bin/bash
+export PGHOST=localhost
+export PGPORT=5432
+export PGDATABASE=inventory_db
+export PGUSER=labuser
+export PGPASSWORD=labpass123
+EOF
+
+chmod +x db_config.sh
+source db_config.sh
+Step 2: Create Migration Directory Structure
+mkdir -p migrations/{up,down,validation}
+mkdir -p logs
+Step 3: Build Migration Template Script
+Create the migration execution framework:
+
+cat > migrate.sh << 'EOF'
+#!/bin/bash
+
+# TODO: Source database configuration
+# source db_config.sh
+
+MIGRATION_DIR="migrations"
+LOG_DIR="logs"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+# TODO: Implement function to log messages
+log_message() {
+    local level=$1
+    local message=$2
+    # Add timestamp and write to both console and log file
+    # Format: [TIMESTAMP] [LEVEL] MESSAGE
+}
+
+# TODO: Implement function to execute migration
+execute_migration() {
+    local migration_file=$1
+    local direction=$2  # 'up' or 'down'
+    
+    # Check if migration file exists
+    # Log migration start
+    # Execute SQL file using psql
+    # Capture exit code
+    # Log success or failure
+    # Return appropriate exit code
+}
+
+# TODO: Implement function to record migration in tracking table
+record_migration() {
+    local migration_name=$1
+    local status=$2
+    
+    # Insert record into migration_history table
+    # Include: migration_name, executed_at, status, executed_by
+}
+
+# Main execution
+case "$1" in
+    up)
+        # TODO: Execute forward migration
+        ;;
+    down)
+        # TODO: Execute rollback migration
+        ;;
+    *)
+        echo "Usage: $0 {up|down} migration_name"
+        exit 1
+        ;;
+esac
+EOF
+
+chmod +x migrate.sh
+Step 4: Create Migration Tracking System
+cat > migrations/up/000_init_tracking.sql << 'EOF'
+-- Create migration tracking table
+CREATE TABLE IF NOT EXISTS migration_history (
+    id SERIAL PRIMARY KEY,
+    migration_name VARCHAR(255) NOT NULL,
+    executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(50) NOT NULL,
+    executed_by VARCHAR(100),
+    rollback_at TIMESTAMP,
+    notes TEXT
+);
+
+CREATE INDEX idx_migration_name ON migration_history(migration_name);
+CREATE INDEX idx_executed_at ON migration_history(executed_at);
+EOF
+
+cat > migrations/down/000_init_tracking.sql << 'EOF'
+-- Rollback migration tracking table
+DROP TABLE IF EXISTS migration_history CASCADE;
+EOF
+Step 5: Create Sample Migration
+cat > migrations/up/001_create_products.sql << 'EOF'
+-- Migration: Create products table
+BEGIN;
+
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    sku VARCHAR(100) UNIQUE NOT NULL,
+    price DECIMAL(10,2) NOT NULL CHECK (price >= 0),
+    stock_quantity INTEGER DEFAULT 0 CHECK (stock_quantity >= 0),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_products_sku ON products(sku);
+CREATE INDEX idx_products_name ON products(name);
+
+-- TODO: Add trigger for updated_at timestamp
+-- CREATE OR REPLACE FUNCTION update_updated_at_column()
+-- RETURNS TRIGGER AS $$
+-- BEGIN
+--     NEW.updated_at = CURRENT_TIMESTAMP;
+--     RETURN NEW;
+-- END;
+-- $$ language 'plpgsql';
+
+COMMIT;
+EOF
+
+cat > migrations/down/001_create_products.sql << 'EOF'
+-- Rollback: Drop products table
+BEGIN;
+DROP TABLE IF EXISTS products CASCADE;
+COMMIT;
+EOF
+Step 6: Create Validation Script
+cat > migrations/validation/001_validate_products.sql << 'EOF'
+-- Validation checks for products table migration
+
+-- TODO: Check if table exists
+-- SELECT EXISTS (
+--     SELECT FROM information_schema.tables 
+--     WHERE table_name = 'products'
+-- );
+
+-- TODO: Verify column count and types
+-- SELECT column_name, data_type, is_nullable
+-- FROM information_schema.columns
+-- WHERE table_name = 'products'
+-- ORDER BY ordinal_position;
+
+-- TODO: Check constraints
+-- SELECT constraint_name, constraint_type
+-- FROM information_schema.table_constraints
+-- WHERE table_name = 'products';
+
+-- TODO: Verify indexes
+-- SELECT indexname, indexdef
+-- FROM pg_indexes
+-- WHERE tablename = 'products';
+EOF
+Task 2: Create Comprehensive Runbook
+Step 1: Build Pre-Migration Checklist Script
+cat > pre_migration_check.sh << 'EOF'
+#!/bin/bash
+
+source db_config.sh
+
+echo "=== Pre-Migration Checklist ==="
+echo "Timestamp: $(date)"
+echo ""
+
+# TODO: Implement database connectivity check
+check_db_connection() {
+    # Test connection using psql
+    # Return 0 for success, 1 for failure
+}
+
+# TODO: Implement backup verification
+verify_backup_exists() {
+    local backup_dir="backups"
+    # Check if recent backup exists (within last 24 hours)
+    # Return 0 if exists, 1 otherwise
+}
+
+# TODO: Implement disk space check
+check_disk_space() {
+    local required_space_mb=100
+    # Check available disk space
+    # Return 0 if sufficient, 1 otherwise
+}
+
+# TODO: Implement active connections check
+check_active_connections() {
+    # Query pg_stat_activity for active connections
+    # Display count and details
+}
+
+# TODO: Implement table lock check
+check_table_locks() {
+    # Query pg_locks for existing locks
+    # Warn if locks detected
+}
+
+# Execute all checks
+echo "1. Database Connection..."
+# check_db_connection
+
+echo "2. Backup Status..."
+# verify_backup_exists
+
+echo "3. Disk Space..."
+# check_disk_space
+
+echo "4. Active Connections..."
+# check_active_connections
+
+echo "5. Table Locks..."
+# check_table_locks
+
+echo ""
+echo "=== Checklist Complete ==="
+EOF
+
+chmod +x pre_migration_check.sh
+Step 2: Create Backup and Restore Scripts
+cat > backup_database.sh << 'EOF'
+#!/bin/bash
+
+source db_config.sh
+
+BACKUP_DIR="backups"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKUP_FILE="${BACKUP_DIR}/inventory_db_${TIMESTAMP}.sql"
+
+mkdir -p $BACKUP_DIR
+
+# TODO: Implement backup function
+create_backup() {
+    # Use pg_dump to create backup
+    # Include schema and data
+    # Compress if needed
+    # Verify backup file created successfully
+}
+
+# TODO: Implement backup validation
+validate_backup() {
+    local backup_file=$1
+    # Check file exists and size > 0
+    # Optionally test restore to temp database
+}
+
+echo "Starting backup at $(date)"
+# create_backup
+# validate_backup "$BACKUP_FILE"
+echo "Backup completed: $BACKUP_FILE"
+EOF
+
+chmod +x backup_database.sh
+
+cat > restore_database.sh << 'EOF'
+#!/bin/bash
+
+source db_config.sh
+
+# TODO: Implement restore function
+restore_from_backup() {
+    local backup_file=$1
+    
+    # Verify backup file exists
+    # Terminate active connections
+    # Drop and recreate database
+    # Restore from backup using psql
+    # Verify restoration
+}
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 <backup_file>"
+    exit 1
+fi
+
+# restore_from_backup "$1"
+EOF
+
+chmod +x restore_database.sh
+Step 3: Create Rollback Procedure Document
+cat > ROLLBACK_RUNBOOK.md << 'EOF'
+# Database Migration Rollback Runbook
+
+## Overview
+This runbook provides step-by-step procedures for rolling back database migrations safely.
+
+## Pre-Rollback Checklist
+
+- [ ] Identify the migration to rollback
+- [ ] Verify backup exists and is valid
+- [ ] Check current database state
+- [ ] Notify stakeholders of rollback operation
+- [ ] Ensure maintenance window is active
+- [ ] Document reason for rollback
+
+## Rollback Procedure
+
+### Step 1: Assess Current State
+```bash
+# Check migration history
+psql -c "SELECT * FROM migration_history ORDER BY executed_at DESC LIMIT 5;"
+
+# Verify current schema version
+psql -c "\dt"
+Step 2: Create Emergency Backup
+./backup_database.sh
+Step 3: Execute Rollback Migration
+# TODO: Students implement rollback execution
+# ./migrate.sh down <migration_name>
+Step 4: Validate Rollback
+# TODO: Students implement validation queries
+# Check table structure
+# Verify data integrity
+# Test application connectivity
+Step 5: Update Documentation
+# Record rollback in migration history
+# Update status to 'rolled_back'
+# Add notes about reason and outcome
+Post-Rollback Verification
+ Database schema matches expected state
+ Application functions correctly
+ No data loss occurred
+ Performance metrics normal
+ Monitoring alerts cleared
+Rollback Decision Matrix
+Scenario	Action	Priority
+Syntax error in migration	Immediate rollback	Critical
+Performance degradation	Assess impact, rollback if severe	High
+Data corruption	Immediate rollback + restore	Critical
+Missing dependency	Rollback, fix, re-apply	Medium
+Emergency Contacts
+Database Administrator: [Contact Info]
+DevOps Lead: [Contact Info]
+Application Owner: [Contact Info]
+Lessons Learned Template
+After each rollback, document:
+
+What went wrong?
+Why wasn't it caught in testing?
+What changes prevent recurrence?
+Update to migration process needed? EOF
+
+### Step 4: Create Migration Execution Runbook
+
+```bash
+cat > MIGRATION_RUNBOOK.md << 'EOF'
+# Database Migration Execution Runbook
+
+## Pre-Migration Phase
+
+### 1. Preparation (T-24 hours)
+- [ ] Review migration scripts
+- [ ] Test in staging environment
+- [ ] Create backup strategy
+- [ ] Schedule maintenance window
+- [ ] Prepare rollback plan
+
+### 2. Pre-Flight Checks (T-1 hour)
+```bash
+# Execute pre-migration checklist
+./pre_migration_check.sh
+
+# Create backup
+./backup_database.sh
+
+# Verify backup
+ls -lh backups/
+Migration Execution Phase
+3. Execute Migration
+# Source configuration
+source db_config.sh
+
+# Run migration
+./migrate.sh up <migration_name>
+
+# Monitor logs
+tail -f logs/migration_*.log
+4. Validation
+# TODO: Students implement validation
+# Run validation queries
+# psql -f migrations/validation/<migration_name>.sql
+
+# Check migration history
+# psql -c "SELECT * FROM migration_history WHERE migration_name = '<name>';"
+Post-Migration Phase
+5. Verification Steps
+ Schema changes applied correctly
+ Data integrity maintained
+ Indexes created successfully
+ Constraints functioning
+ Application connectivity restored
+6. Monitoring (First 30 minutes)
+ Query performance metrics
+ Error logs review
+ Application health checks
+ User acceptance testing
+Troubleshooting Guide
+Issue: Migration Fails Mid-Execution
+Solution:
+
+Check error logs
+Verify transaction rollback occurred
+Execute rollback migration if needed
+Restore from backup if corruption detected
+Issue: Performance Degradation
+Solution:
+
+Check query execution plans
+Verify indexes created
+Run ANALYZE on affected tables
+Consider rollback if severe
+Issue: Lock Timeout
+Solution:
+
+Identify blocking queries
+Terminate long-running transactions
+Retry migration
+Adjust timeout settings if needed
+Success Criteria
+Migration is successful when:
+
+All SQL statements executed without errors
+Validation checks pass
+Application functions normally
+Performance within acceptable range
+No data loss or corruption EOF
+
+### Step 5: Create Validation Test Suite
+
+```bash
+cat > validate_migration.sh << 'EOF'
+#!/bin/bash
+
+source db_config.sh
+
+VALIDATION_DIR="migrations/validation"
+MIGRATION_NAME=$1
+
+if [ -z "$MIGRATION_NAME" ]; then
+    echo "Usage: $0 <migration_name>"
+    exit 1
+fi
+
+echo "=== Validation Suite for $MIGRATION_NAME ==="
+
+# TODO: Implement schema validation
+validate_schema() {
+    # Check expected tables exist
+    # Verify column definitions
+    # Confirm data types
+}
+
+# TODO: Implement constraint validation
+validate_constraints() {
+    # Check primary keys
+    # Verify foreign keys
+    # Test check constraints
+}
+
+# TODO: Implement index validation
+validate_indexes() {
+    # Confirm indexes exist
+    # Verify index definitions
+}
+
+# TODO: Implement data validation
+validate_data() {
+    # Check row counts
+    # Verify data integrity
+    # Test sample queries
+}
+
+# TODO: Implement performance validation
+validate_performance() {
+    # Run sample queries
+    # Check execution times
+    # Compare with baseline
+}
+
+# Execute validation suite
+echo "1. Schema Validation..."
+# validate_schema
+
+echo "2. Constraint Validation..."
+# validate_constraints
+
+echo "3. Index Validation..."
+# validate_indexes
+
+echo "4. Data Validation..."
+# validate_data
+
+echo "5. Performance Validation..."
+# validate_performance
+
+echo ""
+echo "=== Validation Complete ==="
+EOF
+
+chmod +x validate_migration.sh
+Verification
+Verify Migration Framework
+Test database connection:
+source db_config.sh
+psql -c "SELECT version();"
+Initialize tracking system:
+psql -f migrations/up/000_init_tracking.sql
+psql -c "SELECT * FROM migration_history;"
+Test backup script:
+./backup_database.sh
+ls -lh backups/
+Execute sample migration:
+psql -f migrations/up/001_create_products.sql
+psql -c "\d products"
+Test rollback:
+psql -f migrations/down/001_create_products.sql
+psql -c "\d products"
+Verify Runbook Documentation
+Check all files created:
+ls -R migrations/
+cat MIGRATION_RUNBOOK.md
+cat ROLLBACK_RUNBOOK.md
+Verify scripts are executable:
+ls -l *.sh
+Test pre-migration checks:
+./pre_migration_check.sh
+Expected Outcomes
+Migration directory structure created
+Tracking system operational
+Backup and restore scripts functional
+Comprehensive runbooks documented
+Validation framework in place
+All scripts executable and tested
+Troubleshooting Tips
+Issue: Cannot connect to PostgreSQL
+
+Check service status: sudo systemctl status postgresql
+Verify credentials in db_config.sh
+Check pg_hba.conf for authentication settings
+Issue: Permission denied on scripts
+
+Make scripts executable: chmod +x *.sh
+Check file ownership: ls -l
+Issue: Migration fails with syntax error
+
+Review SQL syntax in migration file
+Test SQL directly in psql first
+Check for missing semicolons or quotes
+Issue: Backup file not created
+
+Verify backup directory exists
+Check disk space: df -h
+Review pg_dump permissions
+Conclusion
+You have successfully created a comprehensive database migration and rollback framework. This lab covered:
+
+Building a structured migration system with version tracking
+Creating automated backup and restore procedures
+Developing detailed runbooks for migration execution and rollback
+Implementing validation checks for database changes
+Establishing safety procedures for production database changes
+These skills are essential for DevOps engineers managing database changes in production environments. The runbooks and scripts you created provide a foundation for safe, repeatable database migrations with clear rollback procedures when issues arise.
+
+Key Takeaways:
+
+Always backup before migrations
+Document every step of the process
+Validate changes thoroughly
+Have a tested rollback plan ready
+Track all migrations in a history table
+This framework can be extended with additional features like automated testing, notification systems, and integration with CI/CD pipelines.
