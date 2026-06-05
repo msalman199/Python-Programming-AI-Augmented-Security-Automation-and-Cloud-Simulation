@@ -1,0 +1,303 @@
+Job Registry with PostgreSQL
+Prerequisites
+Basic Linux command-line skills
+Understanding of SQL fundamentals (SELECT, INSERT, UPDATE)
+Familiarity with Python programming
+Basic knowledge of database concepts
+Understanding of job scheduling concepts
+Learning Objectives
+By completing this lab, you will:
+
+Design a PostgreSQL schema for job metadata persistence
+Implement job status tracking with timestamps
+Store and retrieve job execution results
+Query job history and analyze execution patterns
+Environment Setup
+Install Required Software
+Update system packages:
+sudo apt update
+Install PostgreSQL:
+sudo apt install -y postgresql postgresql-contrib
+Install Python and dependencies:
+sudo apt install -y python3 python3-pip
+pip3 install psycopg2-binary
+Start PostgreSQL service:
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+Configure PostgreSQL access:
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'labpassword';"
+sudo -u postgres psql -c "CREATE DATABASE job_registry;"
+Task 1: Design and Implement Job Registry Schema
+Step 1: Create Database Schema
+Create a file named schema.sql:
+
+-- TODO: Create jobs table with appropriate columns
+CREATE TABLE jobs (
+    job_id SERIAL PRIMARY KEY,
+    job_name VARCHAR(255) NOT NULL,
+    -- TODO: Add status column (pending, running, completed, failed)
+    -- TODO: Add created_at timestamp
+    -- TODO: Add started_at timestamp (nullable)
+    -- TODO: Add completed_at timestamp (nullable)
+    -- TODO: Add result_data JSONB column for storing results
+    -- TODO: Add error_message TEXT column (nullable)
+);
+
+-- TODO: Create index on job_name for faster lookups
+
+-- TODO: Create index on status for filtering queries
+
+-- TODO: Create index on created_at for time-based queries
+Step 2: Apply Schema
+sudo -u postgres psql -d job_registry -f schema.sql
+Step 3: Verify Schema Creation
+sudo -u postgres psql -d job_registry -c "\d jobs"
+Expected output should show your table structure with all columns and indexes.
+
+Task 2: Implement Job Registry Manager
+Step 1: Create Job Manager Class
+Create job_manager.py:
+
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from datetime import datetime
+import json
+
+class JobManager:
+    def __init__(self, host='localhost', database='job_registry', 
+                 user='postgres', password='labpassword'):
+        """Initialize database connection."""
+        # TODO: Establish connection to PostgreSQL
+        # TODO: Set autocommit to False for transaction control
+        pass
+    
+    def create_job(self, job_name: str) -> int:
+        """
+        Create a new job entry with 'pending' status.
+        
+        Args:
+            job_name: Name of the job to create
+            
+        Returns:
+            job_id: ID of the created job
+        """
+        # TODO: Insert new job with pending status and created_at timestamp
+        # TODO: Return the generated job_id
+        pass
+    
+    def start_job(self, job_id: int) -> bool:
+        """
+        Mark job as running and set started_at timestamp.
+        
+        Args:
+            job_id: ID of the job to start
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        # TODO: Update job status to 'running'
+        # TODO: Set started_at to current timestamp
+        # TODO: Commit transaction
+        pass
+    
+    def complete_job(self, job_id: int, result_data: dict) -> bool:
+        """
+        Mark job as completed and store results.
+        
+        Args:
+            job_id: ID of the job to complete
+            result_data: Dictionary containing job results
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        # TODO: Update job status to 'completed'
+        # TODO: Set completed_at timestamp
+        # TODO: Store result_data as JSONB
+        # TODO: Commit transaction
+        pass
+    
+    def fail_job(self, job_id: int, error_message: str) -> bool:
+        """
+        Mark job as failed and store error message.
+        
+        Args:
+            job_id: ID of the job that failed
+            error_message: Error description
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        # TODO: Update job status to 'failed'
+        # TODO: Set completed_at timestamp
+        # TODO: Store error_message
+        # TODO: Commit transaction
+        pass
+    
+    def get_job_status(self, job_id: int) -> dict:
+        """
+        Retrieve current job status and metadata.
+        
+        Args:
+            job_id: ID of the job to query
+            
+        Returns:
+            dict: Job metadata including status, timestamps, and results
+        """
+        # TODO: Query job by job_id
+        # TODO: Return as dictionary
+        pass
+    
+    def get_jobs_by_status(self, status: str) -> list:
+        """
+        Retrieve all jobs with specified status.
+        
+        Args:
+            status: Job status to filter by
+            
+        Returns:
+            list: List of job dictionaries
+        """
+        # TODO: Query jobs filtered by status
+        # TODO: Return as list of dictionaries
+        pass
+    
+    def get_job_duration(self, job_id: int) -> float:
+        """
+        Calculate job execution duration in seconds.
+        
+        Args:
+            job_id: ID of the job
+            
+        Returns:
+            float: Duration in seconds, or None if not completed
+        """
+        # TODO: Query started_at and completed_at
+        # TODO: Calculate difference in seconds
+        # TODO: Return duration or None
+        pass
+    
+    def close(self):
+        """Close database connection."""
+        # TODO: Close cursor and connection
+        pass
+Step 2: Create Test Script
+Create test_job_registry.py:
+
+#!/usr/bin/env python3
+from job_manager import JobManager
+import time
+
+def test_job_lifecycle():
+    """Test complete job lifecycle."""
+    manager = JobManager()
+    
+    # TODO: Create a new job named "data_processing_job"
+    
+    # TODO: Print job_id and initial status
+    
+    # TODO: Start the job
+    
+    # TODO: Simulate work with time.sleep(2)
+    
+    # TODO: Complete job with sample results
+    # Sample result: {"records_processed": 1500, "errors": 0}
+    
+    # TODO: Retrieve and print final job status
+    
+    # TODO: Calculate and print job duration
+    
+    manager.close()
+
+def test_failed_job():
+    """Test job failure scenario."""
+    manager = JobManager()
+    
+    # TODO: Create a new job named "failing_job"
+    
+    # TODO: Start the job
+    
+    # TODO: Fail the job with error message
+    
+    # TODO: Retrieve and print job status
+    
+    manager.close()
+
+def test_query_by_status():
+    """Test querying jobs by status."""
+    manager = JobManager()
+    
+    # TODO: Query all completed jobs
+    
+    # TODO: Print count and details
+    
+    # TODO: Query all failed jobs
+    
+    # TODO: Print count and details
+    
+    manager.close()
+
+if __name__ == "__main__":
+    print("Testing Job Lifecycle...")
+    test_job_lifecycle()
+    
+    print("\nTesting Failed Job...")
+    test_failed_job()
+    
+    print("\nTesting Query by Status...")
+    test_query_by_status()
+Step 3: Implement and Test
+Complete the JobManager class implementation
+Complete the test script
+Run tests:
+chmod +x test_job_registry.py
+python3 test_job_registry.py
+Verification
+Verify Job Creation and Status Updates
+sudo -u postgres psql -d job_registry -c "SELECT job_id, job_name, status, created_at FROM jobs ORDER BY job_id;"
+Verify Timestamps
+sudo -u postgres psql -d job_registry -c "SELECT job_id, job_name, started_at, completed_at, (completed_at - started_at) as duration FROM jobs WHERE status IN ('completed', 'failed');"
+Verify Results Storage
+sudo -u postgres psql -d job_registry -c "SELECT job_id, job_name, result_data FROM jobs WHERE status = 'completed';"
+Verify Error Handling
+sudo -u postgres psql -d job_registry -c "SELECT job_id, job_name, error_message FROM jobs WHERE status = 'failed';"
+Expected Results
+At least 3 jobs in the database
+Jobs should have appropriate status values
+Timestamps should be properly recorded
+Completed jobs should have result_data
+Failed jobs should have error_message
+Duration calculations should be accurate
+Troubleshooting
+Connection refused error:
+
+sudo systemctl status postgresql
+sudo systemctl restart postgresql
+Authentication failed:
+
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'labpassword';"
+Module not found (psycopg2):
+
+pip3 install --user psycopg2-binary
+Permission denied on database:
+
+sudo -u postgres psql -d job_registry -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO postgres;"
+Check existing jobs:
+
+sudo -u postgres psql -d job_registry -c "SELECT COUNT(*) FROM jobs;"
+Conclusion
+You have successfully:
+
+Designed a PostgreSQL schema for job metadata persistence
+Implemented job lifecycle management (create, start, complete, fail)
+Stored job execution timestamps and calculated durations
+Persisted job results as JSONB data
+Queried job history by status and analyzed execution patterns
+This job registry pattern is essential for DevOps workflows, enabling:
+
+Audit trails for automated processes
+Performance monitoring and optimization
+Failure analysis and debugging
+Compliance and reporting requirements
+Distributed system coordination
+The skills learned here apply directly to building production job schedulers, CI/CD pipelines, and workflow orchestration systems.
