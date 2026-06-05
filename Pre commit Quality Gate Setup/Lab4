@@ -1,0 +1,319 @@
+Pre-commit Quality Gate Setup
+Prerequisites
+Basic understanding of Git workflows and commits
+Familiarity with Python and command-line operations
+Knowledge of code quality concepts (linting, formatting)
+A Linux machine with sudo privileges
+Basic understanding of YAML configuration files
+Learning Objectives
+By completing this lab, you will:
+
+Configure pre-commit hooks to enforce code quality standards
+Implement automated linting checks before commits
+Set up code formatting enforcement
+Configure basic security scanning in the commit workflow
+Understand quality gates in DevOps pipelines
+Environment Setup
+Initial System Preparation
+Update your system and install required packages:
+sudo apt update
+sudo apt install -y python3 python3-pip git
+Verify installations:
+python3 --version
+git --version
+pip3 --version
+Create a working directory:
+mkdir ~/precommit-lab
+cd ~/precommit-lab
+git init
+git config user.name "Lab User"
+git config user.email "labuser@example.com"
+Task 1: Install and Configure Pre-commit Framework
+Step 1: Install Pre-commit
+pip3 install pre-commit
+Verify installation:
+
+pre-commit --version
+Step 2: Create Sample Python Project
+Create a sample Python file to test our hooks:
+
+cat > app.py << 'EOF'
+import os
+import sys
+
+def calculate_sum(a,b):
+    password = "hardcoded_password123"
+    result=a+b
+    return result
+
+def process_data( x ):
+    if x>0:
+        print("Positive")
+    else:
+        print("Negative")
+
+if __name__=="__main__":
+    print(calculate_sum(5,10))
+EOF
+Step 3: Create Pre-commit Configuration
+Create .pre-commit-config.yaml:
+
+cat > .pre-commit-config.yaml << 'EOF'
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: check-json
+      - id: pretty-format-json
+        args: ['--autofix']
+
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        language_version: python3
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        args: ['--max-line-length=88', '--extend-ignore=E203']
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.6
+    hooks:
+      - id: bandit
+        args: ['-ll', '-i']
+EOF
+Step 4: Install Pre-commit Hooks
+pre-commit install
+Expected output:
+
+pre-commit installed at .git/hooks/pre-commit
+Step 5: Run Pre-commit Manually
+Test the hooks before committing:
+
+pre-commit run --all-files
+Observe the failures and warnings. The hooks will identify:
+
+Formatting issues (Black)
+Linting problems (Flake8)
+Security issues (Bandit - hardcoded password)
+Task 2: Fix Code Quality Issues and Configure Custom Rules
+Step 1: Create Flake8 Configuration
+Create .flake8 configuration file:
+
+cat > .flake8 << 'EOF'
+[flake8]
+max-line-length = 88
+extend-ignore = E203, W503
+exclude = 
+    .git,
+    __pycache__,
+    .venv,
+    venv
+per-file-ignores =
+    __init__.py:F401
+EOF
+Step 2: Create Bandit Configuration
+Create .bandit configuration file:
+
+cat > .bandit << 'EOF'
+[bandit]
+exclude_dirs = ['/test', '.venv', 'venv']
+skips = B101,B601
+EOF
+Step 3: Fix the Python Code
+Update app.py to pass all checks:
+
+# TODO: Fix the following issues in app.py:
+# 1. Add proper spacing around operators
+# 2. Remove hardcoded password (use environment variable or config)
+# 3. Fix spacing in function parameters
+# 4. Add proper spacing in conditionals
+# 5. Ensure proper spacing around comparison operators
+
+# Starter template - complete the implementation:
+
+import os
+import sys
+
+
+def calculate_sum(a, b):
+    """
+    Calculate sum of two numbers.
+    
+    Args:
+        a: First number
+        b: Second number
+    
+    Returns:
+        Sum of a and b
+    """
+    # TODO: Implement without hardcoded credentials
+    pass
+
+
+def process_data(x):
+    """
+    Process data and print result.
+    
+    Args:
+        x: Number to process
+    """
+    # TODO: Fix spacing and implement logic
+    pass
+
+
+if __name__ == "__main__":
+    # TODO: Complete main execution
+    pass
+Step 4: Create a Corrected Version
+Here's a hint for the corrected version (students should implement):
+
+cat > app_fixed.py << 'EOF'
+import os
+import sys
+
+
+def calculate_sum(a, b):
+    """Calculate sum of two numbers."""
+    result = a + b
+    return result
+
+
+def process_data(x):
+    """Process data based on value."""
+    if x > 0:
+        print("Positive")
+    else:
+        print("Negative")
+
+
+if __name__ == "__main__":
+    print(calculate_sum(5, 10))
+EOF
+Step 5: Test Pre-commit Hooks
+# Copy fixed version
+cp app_fixed.py app.py
+
+# Run pre-commit again
+pre-commit run --all-files
+All checks should now pass.
+
+Step 6: Add Custom Hook for TODO Comments
+Add a custom hook to .pre-commit-config.yaml:
+
+  - repo: local
+    hooks:
+      - id: check-todos
+        name: Check for TODO comments
+        entry: bash -c 'if grep -r "TODO" --include="*.py" .; then echo "TODO comments found. Please resolve before committing."; exit 1; fi'
+        language: system
+        pass_filenames: false
+Add this to your existing .pre-commit-config.yaml file manually or recreate it.
+
+Step 7: Create Additional Test Files
+Create a JSON file to test JSON formatting:
+
+cat > config.json << 'EOF'
+{"name":"test","value":123,"nested":{"key":"value"}}
+EOF
+Create a YAML file to test YAML validation:
+
+cat > config.yaml << 'EOF'
+application:
+  name: precommit-lab
+  version: 1.0
+  settings:
+    debug: true
+    timeout: 30
+EOF
+Verification
+Step 1: Stage and Commit Files
+git add .pre-commit-config.yaml .flake8 .bandit app.py config.json config.yaml
+git commit -m "Add pre-commit configuration and sample files"
+The pre-commit hooks should run automatically. All checks should pass.
+
+Step 2: Test Hook Enforcement
+Create a file with intentional issues:
+
+cat > bad_code.py << 'EOF'
+def bad_function(x,y):
+    password="secret123"
+    return x+y
+EOF
+Try to commit:
+
+git add bad_code.py
+git commit -m "Test bad code"
+The commit should be blocked with errors from:
+
+Black (formatting)
+Flake8 (linting)
+Bandit (security)
+Step 3: Verify Hook Bypass (Emergency Use Only)
+# This should be used only in emergencies
+git commit -m "Emergency commit" --no-verify
+Note: This bypasses hooks and should be avoided in production.
+
+Step 4: Check Pre-commit Hook Status
+pre-commit run --all-files
+ls -la .git/hooks/
+cat .git/hooks/pre-commit | head -20
+Step 5: Update Hooks
+pre-commit autoupdate
+This updates hook versions in .pre-commit-config.yaml.
+
+Expected Outcomes
+After completing this lab, you should have:
+
+A working pre-commit framework installed and configured
+Automated code formatting with Black
+Linting enforcement with Flake8
+Security scanning with Bandit
+Additional file validation hooks (JSON, YAML, file size)
+Understanding of how to configure and customize quality gates
+Verification Checklist
+ Pre-commit hooks installed in .git/hooks/
+ .pre-commit-config.yaml configured with multiple hooks
+ Black formatting enforced automatically
+ Flake8 linting catches code quality issues
+ Bandit identifies security vulnerabilities
+ Commits blocked when quality checks fail
+ Configuration files (.flake8, .bandit) properly set up
+Troubleshooting Tips
+Issue: Pre-commit command not found
+# Add pip installation path to PATH
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+Issue: Hooks not running on commit
+# Reinstall hooks
+pre-commit uninstall
+pre-commit install
+Issue: Black and Flake8 conflicts
+Ensure .flake8 has extend-ignore = E203, W503 to avoid conflicts with Black formatting.
+
+Issue: Bandit too strict
+Adjust severity in .pre-commit-config.yaml:
+
+args: ['-ll']  # Only report high severity issues
+Issue: Slow hook execution
+# Run specific hooks only
+pre-commit run black --all-files
+pre-commit run flake8 --all-files
+Conclusion
+You have successfully configured a pre-commit quality gate system that enforces code quality standards before code enters your repository. This setup includes:
+
+Automated formatting with Black ensuring consistent code style
+Linting with Flake8 catching common errors and style violations
+Security scanning with Bandit identifying potential vulnerabilities
+File validation preventing large files and ensuring proper formatting
+This quality gate approach is essential in DevOps practices, preventing technical debt and security issues early in the development cycle. Pre-commit hooks serve as the first line of defense in maintaining code quality, reducing review time, and ensuring consistent standards across teams.
+
+In production environments, these local checks are typically complemented by CI/CD pipeline checks, creating multiple layers of quality assurance. The skills learned here form the foundation for implementing comprehensive quality gates in enterprise DevOps workflows.
