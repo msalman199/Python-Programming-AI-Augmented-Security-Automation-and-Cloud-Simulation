@@ -1,0 +1,479 @@
+Queryable Job History API with Tests
+Prerequisites
+Basic understanding of REST APIs and HTTP methods
+Familiarity with Python and Flask framework
+Knowledge of SQL databases and queries
+Experience with pytest for testing
+Basic Linux command line skills
+Learning Objectives
+By completing this lab, you will:
+
+Build a REST API for querying job execution history
+Implement filtering capabilities for audit trails
+Write comprehensive API tests using pytest
+Enable job auditability for DevOps workflows
+Environment Setup
+Install Required Tools
+# Update package manager
+sudo apt update
+
+# Install Python and pip
+sudo apt install -y python3 python3-pip python3-venv
+
+# Create project directory
+mkdir -p ~/job-history-api
+cd ~/job-history-api
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install flask flask-sqlalchemy pytest pytest-flask requests
+Project Structure
+# Create directory structure
+mkdir -p app tests
+touch app/__init__.py app/models.py app/routes.py app/config.py
+touch tests/__init__.py tests/test_api.py
+touch run.py requirements.txt
+Task 1: Build Job History API with Database
+Step 1: Configure Database Models
+Create the job history data model in app/models.py:
+
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+
+db = SQLAlchemy()
+
+class JobHistory(db.Model):
+    '''
+    Model for storing job execution history.
+    '''
+    __tablename__ = 'job_history'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    job_name = db.Column(db.String(100), nullable=False)
+    status = db.Column(db.String(20), nullable=False)  # success, failed, running
+    start_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    end_time = db.Column(db.DateTime)
+    duration = db.Column(db.Integer)  # in seconds
+    user = db.Column(db.String(50))
+    environment = db.Column(db.String(20))  # dev, staging, prod
+    error_message = db.Column(db.Text)
+    
+    def to_dict(self):
+        '''
+        Convert model instance to dictionary.
+        
+        Returns:
+            Dictionary representation of job history
+        '''
+        # TODO: Implement conversion to dictionary
+        # Include all fields, handle None values for end_time
+        pass
+Step 2: Create Application Configuration
+Edit app/config.py:
+
+import os
+
+class Config:
+    '''Application configuration'''
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///job_history.db'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    TESTING = False
+
+class TestConfig(Config):
+    '''Test configuration'''
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///test_job_history.db'
+    TESTING = True
+Step 3: Initialize Flask Application
+Edit app/__init__.py:
+
+from flask import Flask
+from app.models import db
+from app.config import Config
+
+def create_app(config_class=Config):
+    '''
+    Application factory pattern.
+    
+    Args:
+        config_class: Configuration class to use
+    
+    Returns:
+        Configured Flask application
+    '''
+    app = Flask(__name__)
+    app.config.from_object(config_class)
+    
+    # TODO: Initialize database with app
+    # TODO: Import and register routes blueprint
+    # TODO: Create tables within app context
+    
+    return app
+Step 4: Implement API Routes with Filters
+Edit app/routes.py:
+
+from flask import Blueprint, request, jsonify
+from app.models import db, JobHistory
+from datetime import datetime
+
+api = Blueprint('api', __name__)
+
+@api.route('/jobs', methods=['POST'])
+def create_job():
+    '''
+    Create a new job history entry.
+    
+    Expected JSON body:
+    {
+        "job_name": "backup-database",
+        "status": "running",
+        "user": "admin",
+        "environment": "prod"
+    }
+    '''
+    # TODO: Get JSON data from request
+    # TODO: Create JobHistory instance
+    # TODO: Add to database and commit
+    # TODO: Return created job as JSON with 201 status
+    pass
+
+@api.route('/jobs', methods=['GET'])
+def get_jobs():
+    '''
+    Get job history with optional filters.
+    
+    Query parameters:
+    - status: Filter by job status
+    - job_name: Filter by job name
+    - environment: Filter by environment
+    - user: Filter by user
+    - start_date: Filter jobs after this date (YYYY-MM-DD)
+    - end_date: Filter jobs before this date (YYYY-MM-DD)
+    '''
+    # TODO: Start with base query
+    query = JobHistory.query
+    
+    # TODO: Apply filters based on query parameters
+    # Use request.args.get() to retrieve parameters
+    # Apply filters conditionally using query.filter()
+    
+    # TODO: Order by start_time descending
+    # TODO: Execute query and convert to list of dictionaries
+    # TODO: Return JSON response
+    pass
+
+@api.route('/jobs/<int:job_id>', methods=['GET'])
+def get_job(job_id):
+    '''
+    Get a specific job by ID.
+    
+    Args:
+        job_id: Job history ID
+    '''
+    # TODO: Query job by ID or return 404
+    # TODO: Return job as JSON
+    pass
+
+@api.route('/jobs/<int:job_id>', methods=['PUT'])
+def update_job(job_id):
+    '''
+    Update job status and end time.
+    
+    Expected JSON body:
+    {
+        "status": "success",
+        "end_time": "2024-01-15T10:30:00",
+        "error_message": "Optional error"
+    }
+    '''
+    # TODO: Find job or return 404
+    # TODO: Update fields from request JSON
+    # TODO: Calculate duration if end_time provided
+    # TODO: Commit changes and return updated job
+    pass
+
+@api.route('/jobs/stats', methods=['GET'])
+def get_stats():
+    '''
+    Get job execution statistics.
+    
+    Returns summary of job counts by status and environment.
+    '''
+    # TODO: Query and count jobs grouped by status
+    # TODO: Query and count jobs grouped by environment
+    # TODO: Return statistics as JSON
+    pass
+Step 5: Create Application Entry Point
+Edit run.py:
+
+from app import create_app
+
+app = create_app()
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
+Step 6: Populate Sample Data
+Create populate_data.py:
+
+from app import create_app
+from app.models import db, JobHistory
+from datetime import datetime, timedelta
+import random
+
+def populate_sample_data():
+    '''Create sample job history data for testing'''
+    app = create_app()
+    
+    with app.app_context():
+        # Clear existing data
+        db.drop_all()
+        db.create_all()
+        
+        job_names = ['backup-database', 'deploy-app', 'run-tests', 'cleanup-logs']
+        statuses = ['success', 'failed', 'running']
+        environments = ['dev', 'staging', 'prod']
+        users = ['admin', 'devops', 'jenkins']
+        
+        # TODO: Create 20-30 sample job entries
+        # Use random choices from lists above
+        # Vary start_time over past 7 days
+        # Set end_time and duration for completed jobs
+        # Add error_message for failed jobs
+        
+        print(f"Created sample job history entries")
+
+if __name__ == '__main__':
+    populate_sample_data()
+Task 2: Write Comprehensive API Tests
+Step 1: Create Test Configuration
+Edit tests/test_api.py:
+
+import pytest
+from app import create_app
+from app.models import db, JobHistory
+from app.config import TestConfig
+from datetime import datetime
+
+@pytest.fixture
+def app():
+    '''Create application for testing'''
+    app = create_app(TestConfig)
+    
+    with app.app_context():
+        db.create_all()
+        yield app
+        db.session.remove()
+        db.drop_all()
+
+@pytest.fixture
+def client(app):
+    '''Create test client'''
+    return app.test_client()
+
+@pytest.fixture
+def sample_jobs(app):
+    '''Create sample job data for tests'''
+    with app.app_context():
+        jobs = [
+            JobHistory(
+                job_name='backup-db',
+                status='success',
+                user='admin',
+                environment='prod',
+                start_time=datetime(2024, 1, 15, 10, 0),
+                end_time=datetime(2024, 1, 15, 10, 5),
+                duration=300
+            ),
+            JobHistory(
+                job_name='deploy-app',
+                status='failed',
+                user='devops',
+                environment='staging',
+                start_time=datetime(2024, 1, 15, 11, 0),
+                end_time=datetime(2024, 1, 15, 11, 2),
+                duration=120,
+                error_message='Connection timeout'
+            ),
+            JobHistory(
+                job_name='run-tests',
+                status='running',
+                user='jenkins',
+                environment='dev',
+                start_time=datetime(2024, 1, 15, 12, 0)
+            )
+        ]
+        # TODO: Add jobs to database and commit
+        return jobs
+Step 2: Implement CRUD Tests
+Continue in tests/test_api.py:
+
+def test_create_job(client):
+    '''Test creating a new job entry'''
+    # TODO: Send POST request to /jobs with job data
+    # TODO: Assert response status is 201
+    # TODO: Assert response contains expected fields
+    # TODO: Verify job_name and status match input
+    pass
+
+def test_get_all_jobs(client, sample_jobs):
+    '''Test retrieving all jobs'''
+    # TODO: Send GET request to /jobs
+    # TODO: Assert response status is 200
+    # TODO: Assert response is a list
+    # TODO: Verify correct number of jobs returned
+    pass
+
+def test_get_job_by_id(client, sample_jobs):
+    '''Test retrieving specific job by ID'''
+    # TODO: Send GET request to /jobs/1
+    # TODO: Assert response status is 200
+    # TODO: Verify job details match expected values
+    pass
+
+def test_get_nonexistent_job(client):
+    '''Test retrieving job that doesn't exist'''
+    # TODO: Send GET request to /jobs/999
+    # TODO: Assert response status is 404
+    pass
+
+def test_update_job(client, sample_jobs):
+    '''Test updating job status'''
+    # TODO: Send PUT request to /jobs/3 with status update
+    # TODO: Assert response status is 200
+    # TODO: Verify status changed from 'running' to 'success'
+    # TODO: Verify end_time and duration are set
+    pass
+Step 3: Implement Filter Tests
+Continue in tests/test_api.py:
+
+def test_filter_by_status(client, sample_jobs):
+    '''Test filtering jobs by status'''
+    # TODO: Send GET request to /jobs?status=success
+    # TODO: Assert all returned jobs have status='success'
+    # TODO: Verify correct count
+    pass
+
+def test_filter_by_environment(client, sample_jobs):
+    '''Test filtering jobs by environment'''
+    # TODO: Send GET request to /jobs?environment=prod
+    # TODO: Assert all returned jobs have environment='prod'
+    pass
+
+def test_filter_by_user(client, sample_jobs):
+    '''Test filtering jobs by user'''
+    # TODO: Send GET request to /jobs?user=admin
+    # TODO: Verify only admin's jobs are returned
+    pass
+
+def test_filter_by_job_name(client, sample_jobs):
+    '''Test filtering jobs by name'''
+    # TODO: Send GET request to /jobs?job_name=backup-db
+    # TODO: Verify only matching job names returned
+    pass
+
+def test_multiple_filters(client, sample_jobs):
+    '''Test combining multiple filters'''
+    # TODO: Send GET request with multiple query parameters
+    # Example: /jobs?status=success&environment=prod
+    # TODO: Verify results match all filter criteria
+    pass
+
+def test_get_statistics(client, sample_jobs):
+    '''Test job statistics endpoint'''
+    # TODO: Send GET request to /jobs/stats
+    # TODO: Assert response contains status counts
+    # TODO: Assert response contains environment counts
+    # TODO: Verify counts match sample data
+    pass
+Step 4: Run Tests
+# Activate virtual environment if not already active
+source venv/bin/activate
+
+# Run all tests with verbose output
+pytest tests/ -v
+
+# Run tests with coverage report
+pip install pytest-cov
+pytest tests/ --cov=app --cov-report=term-missing
+
+# Run specific test
+pytest tests/test_api.py::test_filter_by_status -v
+Verification
+Step 1: Start the Application
+# Populate sample data
+python3 populate_data.py
+
+# Run the application
+python3 run.py
+Step 2: Test API Endpoints Manually
+Open a new terminal and test the endpoints:
+
+# Create a new job
+curl -X POST http://localhost:5000/jobs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "job_name": "test-job",
+    "status": "running",
+    "user": "testuser",
+    "environment": "dev"
+  }'
+
+# Get all jobs
+curl http://localhost:5000/jobs
+
+# Filter by status
+curl "http://localhost:5000/jobs?status=success"
+
+# Filter by environment
+curl "http://localhost:5000/jobs?environment=prod"
+
+# Get statistics
+curl http://localhost:5000/jobs/stats
+
+# Update job status
+curl -X PUT http://localhost:5000/jobs/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "success",
+    "end_time": "2024-01-15T10:30:00"
+  }'
+Step 3: Verify Test Coverage
+# Run complete test suite
+pytest tests/ -v --cov=app --cov-report=html
+
+# View coverage report
+python3 -m http.server 8080 --directory htmlcov
+# Access http://localhost:8080 in browser
+Expected Results
+All API endpoints respond correctly
+Filters return accurate results
+All tests pass (minimum 10 tests)
+Test coverage above 80%
+Database persists job history correctly
+Troubleshooting Tips
+Database locked error:
+
+Ensure only one application instance is running
+Delete job_history.db and restart
+Import errors:
+
+Verify virtual environment is activated
+Reinstall dependencies: pip install -r requirements.txt
+Tests fail with 404:
+
+Check that routes are registered in app/__init__.py
+Verify blueprint is imported correctly
+Filter returns no results:
+
+Check query parameter names match exactly
+Verify sample data exists in database
+Conclusion
+You have successfully built a queryable job history API with comprehensive filtering capabilities and test coverage. This system enables:
+
+Complete audit trail of job executions
+Flexible querying by status, environment, user, and date
+Automated testing to ensure reliability
+Foundation for DevOps monitoring and compliance
+This pattern is essential for production systems requiring auditability, troubleshooting capabilities, and compliance reporting. The filtering and testing approaches demonstrated here apply to any REST API requiring historical data queries.
