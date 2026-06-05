@@ -96,3 +96,60 @@ def get_user(user_id, token):
 
 if __name__ == '__main__':
     cli()
+import os
+from pathlib import Path
+
+def save_token(token):
+    """
+    Save authentication token to file
+    
+    Args:
+        token: API token string
+    """
+    # TODO: Expand token file path
+    # TODO: Create parent directories if needed
+    # TODO: Write token to file with restricted permissions (0600)
+    pass
+
+def load_token():
+    """
+    Load authentication token from file
+    
+    Returns:
+        str: Token string or None if not found
+    """
+    # TODO: Expand token file path
+    # TODO: Check if file exists
+    # TODO: Read and return token
+    # TODO: Return None if file doesn't exist
+    pass
+
+def delete_token():
+    """Delete stored authentication token"""
+    # TODO: Remove token file if it exists
+    pass
+@cli.command()
+@click.argument('token')
+def login(token):
+    """Save authentication token for future use"""
+    # TODO: Validate token by making test API call
+    # TODO: Save token if valid
+    # TODO: Display success message
+    pass
+
+@cli.command()
+def logout():
+    """Remove saved authentication token"""
+    # TODO: Delete stored token
+    # TODO: Display confirmation message
+    pass
+
+@cli.command()
+def whoami():
+    """Display current authentication status"""
+    # TODO: Load token from storage
+    # TODO: Display whether user is authenticated
+    # TODO: Optionally test token validity
+    pass
+
+
