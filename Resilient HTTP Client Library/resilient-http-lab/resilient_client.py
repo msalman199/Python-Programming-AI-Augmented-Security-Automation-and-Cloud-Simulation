@@ -117,3 +117,5 @@ class ResilientHTTPClient:
     def close(self):
         """Close the session."""
         self.session.close()
+resilient_client.py
+
