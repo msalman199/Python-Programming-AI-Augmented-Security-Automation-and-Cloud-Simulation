@@ -161,4 +161,144 @@ class PipelineRunner:
                 print(f"  Error: {job.error_message}")
         
         print("="*60)
+def execute(self) -> bool:
+    """Execute the job command"""
+    import subprocess
+    
+    self.status = JobStatus.RUNNING
+    self.start_time = time.time()
+    
+    print(f"\n[RUNNING] {self.name}")
+    print(f"Command: {self.command}")
+    
+    try:
+        # TODO: Execute command using subprocess
+        # Hint: Use subprocess.run() with shell=True
+        # Capture output and check return code
+        # Set status to SUCCESS or FAILED based on result
+        
+        result = subprocess.run(
+            self.command,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        # TODO: Handle result
+        # if result.returncode == 0: SUCCESS
+        # else: FAILED with error_message
+        
+        self.end_time = time.time()
+        return self.status == JobStatus.SUCCESS
+        
+    except Exception as e:
+        # TODO: Handle exceptions
+        # Set status to FAILED
+        # Store error message
+        self.end_time = time.time()
+        return False
+
+def topological_sort(self) -> List[str]:
+    """Perform topological sort using Kahn's algorithm"""
+    
+    # TODO: Calculate in-degrees
+    in_degree = {job: 0 for job in self.jobs}
+    
+    # TODO: Count incoming edges for each node
+    # Hint: Use self.reverse_graph
+    
+    # TODO: Find all nodes with in-degree 0
+    queue = deque()
+    # Add jobs with no dependencies to queue
+    
+    sorted_order = []
+    
+    # TODO: Process queue
+    # while queue is not empty:
+    #   - Remove node from queue
+    #   - Add to sorted_order
+    #   - For each dependent, decrease in-degree
+    #   - If in-degree becomes 0, add to queue
+    
+    return sorted_order
+
+def validate_dag(self) -> bool:
+    """Validate DAG using DFS cycle detection"""
+    
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color = {job: WHITE for job in self.jobs}
+    
+    def has_cycle(node: str) -> bool:
+        """DFS helper to detect cycles"""
+        # TODO: Implement DFS cycle detection
+        # - Mark node as GRAY (visiting)
+        # - For each neighbor:
+        #   - If GRAY: cycle found
+        #   - If WHITE: recurse
+        # - Mark node as BLACK (visited)
+        # - Return cycle status
+        pass
+    
+    # TODO: Check all nodes
+    for job in self.jobs:
+        if color[job] == WHITE:
+            if has_cycle(job):
+                return False
+    
+    return True
+
+
+def execute_pipeline(self) -> Dict[str, JobStatus]:
+    """Execute pipeline in dependency order"""
+    
+    print("\n" + "="*60)
+    print("STARTING PIPELINE EXECUTION")
+    print("="*60)
+    
+    # TODO: Validate DAG
+    if not self.validate_dag():
+        print("ERROR: Cycle detected in dependencies!")
+        return {}
+    
+    # TODO: Get execution order
+    execution_order = self.topological_sort()
+    print(f"\nExecution order: {' -> '.join(execution_order)}")
+    
+    # TODO: Execute jobs in order
+    for job_name in execution_order:
+        job = self.jobs[job_name]
+        
+        # TODO: Check if can execute
+        # if not self.can_execute(job_name):
+        #     job.status = JobStatus.SKIPPED
+        #     continue
+        
+        # TODO: Execute job
+        # success = job.execute()
+        
+        # TODO: Handle failure
+        # if not success:
+        #     self.mark_downstream_skipped(job_name)
+    
+    return {name: job.status for name, job in self.jobs.items()}
+
+def main():
+    """Main entry point"""
+    import sys
+    
+    if len(sys.argv) < 2:
+        print("Usage: python3 pipeline_runner.py <config_file>")
+        sys.exit(1)
+    
+    config_file = sys.argv[1]
+    
+    runner = PipelineRunner(config_file)
+    runner.execute_pipeline()
+    runner.print_summary()
+
+
+if __name__ == "__main__":
+    main()
+
 
