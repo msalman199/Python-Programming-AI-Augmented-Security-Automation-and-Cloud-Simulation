@@ -1,0 +1,413 @@
+CLI and API Integration
+Prerequisites
+Basic understanding of REST APIs and HTTP methods
+Familiarity with Linux command line
+Knowledge of JSON data format
+Basic Python programming skills
+Understanding of authentication concepts (tokens, API keys)
+Learning Objectives
+By the end of this lab, you will be able to:
+
+Build a command-line interface that interacts with REST APIs
+Implement authentication mechanisms in CLI applications
+Handle API responses and errors appropriately
+Parse and display JSON data in user-friendly formats
+Environment Setup
+You will work on a single Linux machine provided by Al Nafi. Click the "Start Lab" button to access your environment.
+
+Install Required Tools
+# Update package manager
+sudo apt update
+
+# Install Python 3 and pip
+sudo apt install -y python3 python3-pip python3-venv
+
+# Create project directory
+mkdir -p ~/cli-api-lab
+cd ~/cli-api-lab
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install required packages
+pip install requests click tabulate
+Set Up Mock API Server
+We'll use a local Flask API server to simulate a backend service.
+
+# Install Flask
+pip install flask flask-httpauth
+
+# Create API server file
+touch api_server.py
+Add the following to api_server.py:
+
+from flask import Flask, jsonify, request
+from flask_httpauth import HTTPTokenAuth
+import json
+
+app = Flask(__name__)
+auth = HTTPTokenAuth(scheme='Bearer')
+
+# Mock data
+users = [
+    {"id": 1, "name": "Alice Johnson", "role": "DevOps Engineer"},
+    {"id": 2, "name": "Bob Smith", "role": "SRE"},
+    {"id": 3, "name": "Carol White", "role": "Platform Engineer"}
+]
+
+# Valid token for authentication
+VALID_TOKEN = "dev-token-12345"
+
+@auth.verify_token
+def verify_token(token):
+    return token == VALID_TOKEN
+
+@app.route('/api/health', methods=['GET'])
+def health():
+    return jsonify({"status": "healthy", "service": "User API"})
+
+@app.route('/api/users', methods=['GET'])
+@auth.login_required
+def get_users():
+    return jsonify({"users": users, "count": len(users)})
+
+@app.route('/api/users/<int:user_id>', methods=['GET'])
+@auth.login_required
+def get_user(user_id):
+    user = next((u for u in users if u["id"] == user_id), None)
+    if user:
+        return jsonify(user)
+    return jsonify({"error": "User not found"}), 404
+
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=5000, debug=True)
+Start the API server in a separate terminal:
+
+cd ~/cli-api-lab
+source venv/bin/activate
+python3 api_server.py
+Keep this terminal running throughout the lab.
+
+Task 1: Build Basic CLI Structure
+Create a CLI application that connects to the API server.
+
+Step 1: Create CLI Application File
+# In a new terminal
+cd ~/cli-api-lab
+source venv/bin/activate
+touch user_cli.py
+chmod +x user_cli.py
+Step 2: Implement CLI Framework
+Add the following starter code to user_cli.py:
+
+#!/usr/bin/env python3
+import click
+import requests
+from tabulate import tabulate
+import json
+import sys
+
+# Configuration
+API_BASE_URL = "http://127.0.0.1:5000/api"
+TOKEN_FILE = "~/.user_cli_token"
+
+class APIClient:
+    """Client for interacting with the User API"""
+    
+    def __init__(self, base_url, token=None):
+        self.base_url = base_url
+        self.token = token
+        self.session = requests.Session()
+        if self.token:
+            self.session.headers.update({
+                'Authorization': f'Bearer {self.token}'
+            })
+    
+    def health_check(self):
+        """
+        Check API health status
+        
+        Returns:
+            dict: Health status response
+        """
+        # TODO: Implement GET request to /health endpoint
+        # TODO: Handle connection errors
+        # TODO: Return JSON response
+        pass
+    
+    def get_users(self):
+        """
+        Retrieve all users from the API
+        
+        Returns:
+            list: List of user dictionaries
+        """
+        # TODO: Implement authenticated GET request to /users endpoint
+        # TODO: Handle authentication errors (401)
+        # TODO: Parse and return user list from response
+        pass
+    
+    def get_user_by_id(self, user_id):
+        """
+        Retrieve a specific user by ID
+        
+        Args:
+            user_id: Integer user ID
+            
+        Returns:
+            dict: User information or None if not found
+        """
+        # TODO: Implement authenticated GET request to /users/{user_id}
+        # TODO: Handle 404 errors appropriately
+        # TODO: Return user data or None
+        pass
+
+@click.group()
+def cli():
+    """User Management CLI - Interact with User API"""
+    pass
+
+@cli.command()
+def health():
+    """Check API server health"""
+    # TODO: Create APIClient instance
+    # TODO: Call health_check method
+    # TODO: Display results in user-friendly format
+    pass
+
+@cli.command()
+@click.option('--token', required=True, help='API authentication token')
+def list_users(token):
+    """List all users"""
+    # TODO: Create authenticated APIClient instance
+    # TODO: Fetch users using get_users method
+    # TODO: Format output using tabulate library
+    # TODO: Handle errors gracefully
+    pass
+
+@cli.command()
+@click.argument('user_id', type=int)
+@click.option('--token', required=True, help='API authentication token')
+def get_user(user_id, token):
+    """Get user details by ID"""
+    # TODO: Create authenticated APIClient instance
+    # TODO: Fetch specific user
+    # TODO: Display user information
+    # TODO: Handle user not found scenario
+    pass
+
+if __name__ == '__main__':
+    cli()
+Step 3: Implement the APIClient Methods
+Complete the health_check() method:
+
+def health_check(self):
+    try:
+        response = self.session.get(f"{self.base_url}/health")
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.ConnectionError:
+        click.echo("Error: Cannot connect to API server", err=True)
+        sys.exit(1)
+    except requests.exceptions.RequestException as e:
+        click.echo(f"Error: {str(e)}", err=True)
+        sys.exit(1)
+Now implement get_users() and get_user_by_id() following similar patterns:
+
+Use appropriate HTTP methods
+Handle authentication headers
+Parse JSON responses
+Implement error handling for different status codes
+Step 4: Implement CLI Commands
+Complete the health() command:
+
+@cli.command()
+def health():
+    """Check API server health"""
+    client = APIClient(API_BASE_URL)
+    result = client.health_check()
+    click.echo(f"Status: {result.get('status')}")
+    click.echo(f"Service: {result.get('service')}")
+Complete the remaining commands (list_users and get_user) to:
+
+Initialize the client with authentication
+Call appropriate API methods
+Format output using tabulate for lists
+Display error messages for failures
+Step 5: Test Basic Functionality
+# Test health check (no auth required)
+python3 user_cli.py health
+
+# Test listing users (requires token)
+python3 user_cli.py list-users --token dev-token-12345
+
+# Test getting specific user
+python3 user_cli.py get-user 1 --token dev-token-12345
+
+# Test error handling with invalid token
+python3 user_cli.py list-users --token invalid-token
+
+# Test non-existent user
+python3 user_cli.py get-user 999 --token dev-token-12345
+Task 2: Implement Token Management
+Enhance the CLI to store and reuse authentication tokens.
+
+Step 1: Add Token Storage Functions
+Add these functions to user_cli.py before the CLI commands:
+
+import os
+from pathlib import Path
+
+def save_token(token):
+    """
+    Save authentication token to file
+    
+    Args:
+        token: API token string
+    """
+    # TODO: Expand token file path
+    # TODO: Create parent directories if needed
+    # TODO: Write token to file with restricted permissions (0600)
+    pass
+
+def load_token():
+    """
+    Load authentication token from file
+    
+    Returns:
+        str: Token string or None if not found
+    """
+    # TODO: Expand token file path
+    # TODO: Check if file exists
+    # TODO: Read and return token
+    # TODO: Return None if file doesn't exist
+    pass
+
+def delete_token():
+    """Delete stored authentication token"""
+    # TODO: Remove token file if it exists
+    pass
+Step 2: Implement Token Commands
+Add new CLI commands for token management:
+
+@cli.command()
+@click.argument('token')
+def login(token):
+    """Save authentication token for future use"""
+    # TODO: Validate token by making test API call
+    # TODO: Save token if valid
+    # TODO: Display success message
+    pass
+
+@cli.command()
+def logout():
+    """Remove saved authentication token"""
+    # TODO: Delete stored token
+    # TODO: Display confirmation message
+    pass
+
+@cli.command()
+def whoami():
+    """Display current authentication status"""
+    # TODO: Load token from storage
+    # TODO: Display whether user is authenticated
+    # TODO: Optionally test token validity
+    pass
+Step 3: Update Existing Commands
+Modify list_users and get_user commands to use stored tokens:
+
+@cli.command()
+@click.option('--token', default=None, help='API token (uses saved token if not provided)')
+def list_users(token):
+    """List all users"""
+    # TODO: If token not provided, load from storage
+    # TODO: Exit with error if no token available
+    # TODO: Proceed with API call
+    pass
+Step 4: Test Token Management
+# Login and save token
+python3 user_cli.py login dev-token-12345
+
+# Check authentication status
+python3 user_cli.py whoami
+
+# List users without providing token (uses saved)
+python3 user_cli.py list-users
+
+# Logout
+python3 user_cli.py logout
+
+# Verify token is removed
+python3 user_cli.py whoami
+Verification
+Test 1: API Connectivity
+# Health check should succeed
+python3 user_cli.py health
+# Expected: Status: healthy, Service: User API
+Test 2: Authentication Flow
+# Login
+python3 user_cli.py login dev-token-12345
+
+# List users without explicit token
+python3 user_cli.py list-users
+
+# Expected: Table showing 3 users with ID, name, and role
+Test 3: Error Handling
+# Test with invalid token
+python3 user_cli.py login invalid-token
+# Expected: Authentication error message
+
+# Test non-existent user
+python3 user_cli.py login dev-token-12345
+python3 user_cli.py get-user 999
+# Expected: User not found message
+Test 4: Complete Workflow
+# Full workflow test
+python3 user_cli.py health
+python3 user_cli.py login dev-token-12345
+python3 user_cli.py list-users
+python3 user_cli.py get-user 2
+python3 user_cli.py whoami
+python3 user_cli.py logout
+Troubleshooting
+API Connection Refused
+
+Ensure Flask server is running: ps aux | grep api_server.py
+Check port 5000 is not in use: netstat -tuln | grep 5000
+Restart server if needed
+Authentication Failures
+
+Verify token is exactly: dev-token-12345
+Check Authorization header format: Bearer <token>
+Ensure token file has correct permissions
+Import Errors
+
+Activate virtual environment: source venv/bin/activate
+Reinstall packages: pip install requests click tabulate flask flask-httpauth
+JSON Parsing Errors
+
+Verify API returns valid JSON: curl http://127.0.0.1:5000/api/health
+Check response status codes before parsing
+Conclusion
+You have successfully built a CLI application that:
+
+Connects to REST API endpoints using the requests library
+Implements Bearer token authentication
+Handles API responses and errors gracefully
+Stores and manages authentication credentials securely
+Formats output in user-friendly tables
+This pattern is fundamental for DevOps engineers who build automation tools, deployment scripts, and infrastructure management utilities. The skills you practiced—API integration, authentication handling, and error management—are directly applicable to working with cloud provider APIs, CI/CD platforms, and monitoring systems.
+
+Key Takeaways
+CLI tools provide scriptable interfaces to web services
+Token-based authentication enables secure API access
+Proper error handling improves user experience
+Local credential storage requires security considerations
+The requests library simplifies HTTP operations in Python
+Next Steps
+Add support for POST/PUT/DELETE operations
+Implement configuration file for API endpoints
+Add output format options (JSON, CSV, YAML)
+Create shell completion scripts
+Package CLI as installable tool using setuptools
