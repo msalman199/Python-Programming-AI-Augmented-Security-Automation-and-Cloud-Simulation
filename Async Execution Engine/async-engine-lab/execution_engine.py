@@ -139,5 +139,28 @@ def __init__(self, max_workers: int = 5, use_priority: bool = False):
     # TODO: Otherwise use regular Queue
     pass
 
+# Time sequential vs concurrent execution
+python -c "
+import asyncio
+import time
+from execution_engine import AsyncExecutionEngine
+from task_model import Task
+from sample_tasks import compute_intensive_task
+import uuid
 
+async def test():
+    engine = AsyncExecutionEngine(max_workers=5)
+    await engine.start()
+    
+    start = time.time()
+    tasks = [Task(str(uuid.uuid4()), compute_intensive_task, (3,)) for _ in range(10)]
+    for t in tasks:
+        await engine.submit_task(t)
+    
+    await asyncio.sleep(5)
+    print(f'Time: {time.time() - start:.2f}s')
+    await engine.stop()
+
+asyncio.run(test())
+"
 
