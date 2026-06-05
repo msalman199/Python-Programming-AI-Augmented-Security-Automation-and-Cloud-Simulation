@@ -34,3 +34,29 @@ jobs:
     dependencies:
       - build
       - integration_tests
+
+jobs:
+  - name: setup
+    command: "echo 'Setup complete'"
+    dependencies: []
+  
+  - name: test_unit
+    command: "echo 'Unit tests passed'"
+    dependencies:
+      - setup
+  
+  - name: test_integration
+    command: "exit 1"  # This will fail
+    dependencies:
+      - setup
+  
+  - name: build
+    command: "echo 'Building...'"
+    dependencies:
+      - test_unit
+      - test_integration
+  
+  - name: deploy
+    command: "echo 'Deploying...'"
+    dependencies:
+      - build
