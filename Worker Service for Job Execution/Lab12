@@ -1,0 +1,455 @@
+ Worker Service for Job Execution
+Prerequisites
+Basic understanding of Linux command line
+Familiarity with Python programming
+Knowledge of REST APIs and HTTP methods
+Understanding of background processes and services
+Basic database concepts (SQLite)
+Learning Objectives
+By completing this lab, you will:
+
+Implement a worker service that executes jobs asynchronously
+Fetch jobs from a queue and process them
+Update job status throughout the execution lifecycle
+Understand worker service patterns for DevOps automation
+Environment Setup
+Install Required Tools
+# Update package manager
+sudo apt update
+
+# Install Python and pip
+sudo apt install -y python3 python3-pip python3-venv
+
+# Install SQLite
+sudo apt install -y sqlite3
+
+# Create project directory
+mkdir -p ~/worker-service-lab
+cd ~/worker-service-lab
+
+# Create Python virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install required Python packages
+pip install flask requests
+Verify Installation
+python3 --version
+sqlite3 --version
+Task 1: Create Job Queue Database and API
+Step 1: Initialize the Database
+Create the database schema for storing jobs:
+
+# Create database file
+sqlite3 jobs.db << 'EOF'
+CREATE TABLE jobs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_type TEXT NOT NULL,
+    payload TEXT,
+    status TEXT DEFAULT 'pending',
+    result TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert sample jobs
+INSERT INTO jobs (job_type, payload, status) VALUES 
+    ('backup', '{"path": "/var/log", "destination": "/backup"}', 'pending'),
+    ('cleanup', '{"directory": "/tmp", "days": 7}', 'pending'),
+    ('report', '{"type": "system", "format": "json"}', 'pending');
+
+.quit
+EOF
+Step 2: Create the Job API Server
+Create api_server.py:
+
+from flask import Flask, jsonify, request
+import sqlite3
+from datetime import datetime
+import json
+
+app = Flask(__name__)
+DB_PATH = 'jobs.db'
+
+def get_db_connection():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+@app.route('/jobs', methods=['GET'])
+def get_jobs():
+    """Retrieve all jobs or filter by status"""
+    status = request.args.get('status')
+    conn = get_db_connection()
+    
+    if status:
+        jobs = conn.execute('SELECT * FROM jobs WHERE status = ?', (status,)).fetchall()
+    else:
+        jobs = conn.execute('SELECT * FROM jobs').fetchall()
+    
+    conn.close()
+    return jsonify([dict(job) for job in jobs])
+
+@app.route('/jobs/<int:job_id>', methods=['GET'])
+def get_job(job_id):
+    """Retrieve a specific job by ID"""
+    conn = get_db_connection()
+    job = conn.execute('SELECT * FROM jobs WHERE id = ?', (job_id,)).fetchone()
+    conn.close()
+    
+    if job is None:
+        return jsonify({'error': 'Job not found'}), 404
+    
+    return jsonify(dict(job))
+
+@app.route('/jobs/<int:job_id>/status', methods=['PUT'])
+def update_job_status(job_id):
+    """
+    Update job status and optionally store results
+    
+    Expected JSON body:
+    {
+        "status": "processing|completed|failed",
+        "result": "optional result data"
+    }
+    """
+    # TODO: Extract status and result from request JSON
+    # TODO: Validate that status is one of: pending, processing, completed, failed
+    # TODO: Update the job in database with new status, result, and updated_at timestamp
+    # TODO: Return updated job data or error if job not found
+    pass
+
+@app.route('/jobs', methods=['POST'])
+def create_job():
+    """
+    Create a new job
+    
+    Expected JSON body:
+    {
+        "job_type": "backup|cleanup|report",
+        "payload": "JSON string with job parameters"
+    }
+    """
+    # TODO: Extract job_type and payload from request
+    # TODO: Insert new job into database
+    # TODO: Return created job with ID
+    pass
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
+Step 3: Complete the API Implementation
+Complete the update_job_status and create_job functions in api_server.py:
+
+Hints for update_job_status:
+
+Use request.get_json() to get data
+Validate status is in ['pending', 'processing', 'completed', 'failed']
+Use SQL UPDATE with WHERE clause
+Set updated_at = CURRENT_TIMESTAMP
+Hints for create_job:
+
+Extract job_type and payload from JSON
+Use INSERT statement
+Get the last inserted row ID with cursor.lastrowid
+Step 4: Start the API Server
+# Run in a separate terminal or background
+python3 api_server.py &
+
+# Wait a moment for server to start
+sleep 3
+
+# Test the API
+curl http://localhost:5000/jobs
+curl http://localhost:5000/jobs?status=pending
+Task 2: Implement the Worker Service
+Step 1: Create Worker Service Template
+Create worker_service.py:
+
+import requests
+import time
+import json
+import subprocess
+import os
+from datetime import datetime
+
+API_BASE_URL = 'http://localhost:5000'
+POLL_INTERVAL = 5  # seconds
+
+class JobWorker:
+    """Worker service that fetches and executes jobs"""
+    
+    def __init__(self, api_url):
+        self.api_url = api_url
+        self.running = True
+    
+    def fetch_pending_jobs(self):
+        """
+        Fetch jobs with 'pending' status from the API
+        
+        Returns:
+            list: List of pending jobs
+        """
+        # TODO: Make GET request to /jobs?status=pending
+        # TODO: Return the list of jobs or empty list on error
+        pass
+    
+    def update_job_status(self, job_id, status, result=None):
+        """
+        Update job status via API
+        
+        Args:
+            job_id: Job ID to update
+            status: New status (processing, completed, failed)
+            result: Optional result data
+        """
+        # TODO: Make PUT request to /jobs/{job_id}/status
+        # TODO: Send status and result in JSON body
+        # TODO: Handle response and errors
+        pass
+    
+    def execute_backup_job(self, payload):
+        """
+        Execute a backup job
+        
+        Args:
+            payload: JSON string with backup parameters
+            
+        Returns:
+            dict: Result with success status and message
+        """
+        # TODO: Parse payload JSON
+        # TODO: Simulate backup operation (create a tar archive or simple file copy)
+        # TODO: Return success/failure result
+        # Example: Use subprocess to run tar command or cp command
+        pass
+    
+    def execute_cleanup_job(self, payload):
+        """
+        Execute a cleanup job
+        
+        Args:
+            payload: JSON string with cleanup parameters
+            
+        Returns:
+            dict: Result with files cleaned and message
+        """
+        # TODO: Parse payload JSON
+        # TODO: Simulate cleanup (find and remove old files)
+        # TODO: Return result with count of files processed
+        pass
+    
+    def execute_report_job(self, payload):
+        """
+        Execute a report generation job
+        
+        Args:
+            payload: JSON string with report parameters
+            
+        Returns:
+            dict: Result with report data
+        """
+        # TODO: Parse payload JSON
+        # TODO: Generate a simple system report (disk usage, memory, etc.)
+        # TODO: Return report data as dictionary
+        pass
+    
+    def process_job(self, job):
+        """
+        Process a single job based on its type
+        
+        Args:
+            job: Job dictionary from API
+        """
+        job_id = job['id']
+        job_type = job['job_type']
+        payload = job['payload']
+        
+        print(f"[{datetime.now()}] Processing job {job_id} ({job_type})")
+        
+        # Update status to processing
+        self.update_job_status(job_id, 'processing')
+        
+        try:
+            # Execute job based on type
+            if job_type == 'backup':
+                result = self.execute_backup_job(payload)
+            elif job_type == 'cleanup':
+                result = self.execute_cleanup_job(payload)
+            elif job_type == 'report':
+                result = self.execute_report_job(payload)
+            else:
+                raise ValueError(f"Unknown job type: {job_type}")
+            
+            # Update status to completed
+            self.update_job_status(job_id, 'completed', json.dumps(result))
+            print(f"[{datetime.now()}] Job {job_id} completed successfully")
+            
+        except Exception as e:
+            # Update status to failed
+            error_result = {'error': str(e)}
+            self.update_job_status(job_id, 'failed', json.dumps(error_result))
+            print(f"[{datetime.now()}] Job {job_id} failed: {e}")
+    
+    def run(self):
+        """Main worker loop"""
+        print(f"Worker service started. Polling every {POLL_INTERVAL} seconds...")
+        
+        while self.running:
+            try:
+                # Fetch pending jobs
+                jobs = self.fetch_pending_jobs()
+                
+                if jobs:
+                    print(f"Found {len(jobs)} pending job(s)")
+                    for job in jobs:
+                        self.process_job(job)
+                else:
+                    print(f"[{datetime.now()}] No pending jobs")
+                
+                # Wait before next poll
+                time.sleep(POLL_INTERVAL)
+                
+            except KeyboardInterrupt:
+                print("\nShutting down worker service...")
+                self.running = False
+            except Exception as e:
+                print(f"Error in worker loop: {e}")
+                time.sleep(POLL_INTERVAL)
+
+if __name__ == '__main__':
+    worker = JobWorker(API_BASE_URL)
+    worker.run()
+Step 2: Implement Worker Methods
+Complete the following methods in worker_service.py:
+
+fetch_pending_jobs:
+
+Use requests.get() to call the API
+Handle connection errors with try/except
+Return empty list on failure
+update_job_status:
+
+Use requests.put() with JSON data
+Include both status and result in payload
+Print confirmation or error message
+execute_backup_job:
+
+Parse the payload JSON
+Create a simple backup using tar or file copy
+Return dict with success status and file path
+execute_cleanup_job:
+
+Parse payload for directory and age criteria
+Use find command or Python's os.walk()
+Return count of files found/processed
+execute_report_job:
+
+Use subprocess to run commands like df -h, free -m
+Collect output into a dictionary
+Return formatted report data
+Step 3: Test the Worker Service
+# Ensure API server is running
+# Start worker service in foreground
+python3 worker_service.py
+Watch the output as the worker:
+
+Fetches pending jobs
+Updates status to "processing"
+Executes the job
+Updates status to "completed" or "failed"
+Step 4: Create Additional Test Jobs
+In another terminal:
+
+# Create a new backup job
+curl -X POST http://localhost:5000/jobs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "job_type": "backup",
+    "payload": "{\"path\": \"/etc/hostname\", \"destination\": \"/tmp/backup\"}"
+  }'
+
+# Create a cleanup job
+curl -X POST http://localhost:5000/jobs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "job_type": "cleanup",
+    "payload": "{\"directory\": \"/tmp\", \"days\": 30}"
+  }'
+
+# Check job statuses
+curl http://localhost:5000/jobs
+Verification
+Verify API Functionality
+# Check all jobs
+curl http://localhost:5000/jobs | python3 -m json.tool
+
+# Check only completed jobs
+curl http://localhost:5000/jobs?status=completed | python3 -m json.tool
+
+# Check specific job
+curl http://localhost:5000/jobs/1 | python3 -m json.tool
+Verify Worker Processing
+# Check database directly
+sqlite3 jobs.db "SELECT id, job_type, status, result FROM jobs;"
+
+# Verify all jobs have been processed
+sqlite3 jobs.db "SELECT COUNT(*) FROM jobs WHERE status = 'pending';"
+Expected output: 0 pending jobs if worker is functioning correctly
+
+Verify Job Results
+# Check for backup files (if backup job completed)
+ls -la /tmp/backup/
+
+# Check worker service logs
+# Review the terminal output where worker_service.py is running
+Troubleshooting
+API server not responding:
+
+Check if process is running: ps aux | grep api_server
+Verify port 5000 is not in use: netstat -tlnp | grep 5000
+Check for Python errors in terminal output
+Worker not fetching jobs:
+
+Verify API_BASE_URL is correct in worker_service.py
+Test API manually: curl http://localhost:5000/jobs?status=pending
+Check for network/connection errors in worker output
+Jobs stuck in 'processing' status:
+
+Worker may have crashed during execution
+Check for exceptions in worker terminal
+Manually reset job status in database if needed:
+sqlite3 jobs.db "UPDATE jobs SET status='pending' WHERE status='processing';"
+Permission errors during job execution:
+
+Ensure worker has permissions for backup/cleanup directories
+Use /tmp for testing instead of system directories
+Check file ownership: ls -la /path/to/directory
+Conclusion
+You have successfully implemented a worker service architecture for asynchronous job execution. This pattern is fundamental in DevOps for:
+
+Task Automation: Background processing of maintenance tasks
+CI/CD Pipelines: Executing build and deployment jobs
+Infrastructure Management: Scheduled backups, cleanups, and monitoring
+Scalability: Multiple workers can process jobs in parallel
+Key concepts mastered:
+
+Polling-based job queue pattern
+RESTful API for job management
+Status tracking throughout job lifecycle
+Error handling and job failure management
+This architecture can be extended with:
+
+Job priorities and scheduling
+Multiple worker instances for parallel processing
+Job retry logic and dead letter queues
+Monitoring and alerting integration
+Message queue systems (RabbitMQ, Redis) for production use
+Clean up resources:
+
+# Stop API server
+pkill -f api_server.py
+
+# Stop worker service (Ctrl+C if running in foreground)
+
+# Deactivate virtual environment
+deactivate
