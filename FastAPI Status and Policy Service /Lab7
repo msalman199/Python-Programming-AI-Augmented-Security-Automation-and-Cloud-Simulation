@@ -1,0 +1,397 @@
+FastAPI Status and Policy Service
+Prerequisites
+Basic Python programming knowledge
+Understanding of REST APIs and HTTP methods
+Familiarity with JSON data format
+Linux command line experience
+Basic understanding of system monitoring concepts
+Learning Objectives
+By completing this lab, you will:
+
+Build a FastAPI service with multiple endpoints
+Implement system status monitoring endpoints
+Create policy enforcement mechanisms
+Handle HTTP requests and responses
+Apply middleware for request validation
+Test API endpoints using curl and Python requests
+Environment Setup
+Your Linux machine is provided via the "Start Lab" button. You'll install all required tools during this lab.
+
+Install Required Software
+# Update package manager
+sudo apt update
+
+# Install Python 3 and pip
+sudo apt install -y python3 python3-pip python3-venv
+
+# Create project directory
+mkdir -p ~/fastapi-policy-service
+cd ~/fastapi-policy-service
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install FastAPI and dependencies
+pip install fastapi uvicorn pydantic psutil
+Task 1: Build the FastAPI Service with Status Endpoints
+Step 1: Create the Project Structure
+cd ~/fastapi-policy-service
+
+# Create necessary files
+touch main.py models.py policies.py config.py
+Step 2: Define Configuration Settings
+Create config.py:
+
+from typing import Dict, List
+
+# System resource thresholds
+RESOURCE_LIMITS = {
+    "cpu_percent": 80.0,
+    "memory_percent": 85.0,
+    "disk_percent": 90.0
+}
+
+# Policy rules
+POLICY_RULES = {
+    "max_request_size": 1048576,  # 1MB in bytes
+    "allowed_methods": ["GET", "POST", "PUT", "DELETE"],
+    "rate_limit_per_minute": 100
+}
+
+# API configuration
+API_CONFIG = {
+    "title": "Status and Policy Service",
+    "version": "1.0.0",
+    "description": "System monitoring and policy enforcement API"
+}
+Step 3: Create Data Models
+Create models.py:
+
+from pydantic import BaseModel, Field
+from typing import Optional, Dict
+from datetime import datetime
+
+class SystemStatus(BaseModel):
+    """Model for system status response"""
+    timestamp: datetime
+    cpu_percent: float
+    memory_percent: float
+    disk_percent: float
+    status: str  # "healthy", "warning", "critical"
+
+class PolicyCheckRequest(BaseModel):
+    """Model for policy check requests"""
+    # TODO: Add fields for request_size, method, user_id
+    pass
+
+class PolicyCheckResponse(BaseModel):
+    """Model for policy check responses"""
+    # TODO: Add fields for allowed (bool), reason (str), policy_name (str)
+    pass
+
+class HealthResponse(BaseModel):
+    """Model for health check response"""
+    status: str
+    timestamp: datetime
+    service: str = "FastAPI Policy Service"
+Step 4: Implement Policy Logic
+Create policies.py:
+
+from typing import Dict, Tuple
+from config import RESOURCE_LIMITS, POLICY_RULES
+import psutil
+
+def check_system_health() -> Tuple[str, Dict[str, float]]:
+    """
+    Check system resource usage and determine health status.
+    
+    Returns:
+        Tuple of (status_string, metrics_dict)
+        status can be: "healthy", "warning", "critical"
+    """
+    # TODO: Get CPU, memory, and disk usage using psutil
+    # TODO: Compare against RESOURCE_LIMITS
+    # TODO: Return appropriate status and metrics
+    pass
+
+def validate_request_size(size_bytes: int) -> Tuple[bool, str]:
+    """
+    Validate if request size is within policy limits.
+    
+    Args:
+        size_bytes: Size of the request in bytes
+    
+    Returns:
+        Tuple of (is_valid, reason_message)
+    """
+    # TODO: Check against POLICY_RULES["max_request_size"]
+    # TODO: Return validation result and appropriate message
+    pass
+
+def validate_http_method(method: str) -> Tuple[bool, str]:
+    """
+    Validate if HTTP method is allowed by policy.
+    
+    Args:
+        method: HTTP method string (GET, POST, etc.)
+    
+    Returns:
+        Tuple of (is_valid, reason_message)
+    """
+    # TODO: Check if method is in POLICY_RULES["allowed_methods"]
+    # TODO: Return validation result and message
+    pass
+
+def enforce_rate_limit(user_id: str, request_count: int) -> Tuple[bool, str]:
+    """
+    Check if user has exceeded rate limit.
+    
+    Args:
+        user_id: Identifier for the user
+        request_count: Number of requests in current window
+    
+    Returns:
+        Tuple of (is_allowed, reason_message)
+    """
+    # TODO: Compare request_count against POLICY_RULES["rate_limit_per_minute"]
+    # TODO: Return whether request is allowed
+    pass
+Step 5: Build the Main FastAPI Application
+Create main.py:
+
+from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.responses import JSONResponse
+from datetime import datetime
+from typing import Dict
+import psutil
+
+from models import SystemStatus, PolicyCheckRequest, PolicyCheckResponse, HealthResponse
+from policies import check_system_health, validate_request_size, validate_http_method, enforce_rate_limit
+from config import API_CONFIG
+
+app = FastAPI(
+    title=API_CONFIG["title"],
+    version=API_CONFIG["version"],
+    description=API_CONFIG["description"]
+)
+
+# In-memory storage for rate limiting (use Redis in production)
+request_tracker: Dict[str, int] = {}
+
+@app.get("/", response_model=HealthResponse)
+async def root():
+    """Root endpoint - basic health check"""
+    # TODO: Return HealthResponse with current timestamp and status
+    pass
+
+@app.get("/health", response_model=HealthResponse)
+async def health_check():
+    """Detailed health check endpoint"""
+    # TODO: Implement health check logic
+    # TODO: Return appropriate response
+    pass
+
+@app.get("/status", response_model=SystemStatus)
+async def get_system_status():
+    """
+    Get current system resource usage and status.
+    
+    Returns:
+        SystemStatus with CPU, memory, disk metrics and overall status
+    """
+    # TODO: Call check_system_health() from policies
+    # TODO: Build and return SystemStatus model
+    pass
+
+@app.post("/policy/check", response_model=PolicyCheckResponse)
+async def check_policy(policy_request: PolicyCheckRequest):
+    """
+    Check if a request complies with defined policies.
+    
+    Args:
+        policy_request: PolicyCheckRequest with request details
+    
+    Returns:
+        PolicyCheckResponse indicating if request is allowed
+    """
+    # TODO: Validate request size using validate_request_size()
+    # TODO: Validate HTTP method using validate_http_method()
+    # TODO: Check rate limit using enforce_rate_limit()
+    # TODO: Return PolicyCheckResponse with results
+    pass
+
+@app.get("/policies")
+async def list_policies():
+    """List all active policy rules"""
+    # TODO: Return POLICY_RULES from config
+    pass
+
+@app.get("/limits")
+async def get_resource_limits():
+    """Get configured resource limit thresholds"""
+    # TODO: Return RESOURCE_LIMITS from config
+    pass
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """
+    Middleware to log all incoming requests.
+    """
+    # TODO: Log request method and path
+    # TODO: Call next middleware/endpoint
+    # TODO: Log response status code
+    # TODO: Return response
+    pass
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+Task 2: Implement and Test the Service
+Step 1: Complete the Policy Functions
+Edit policies.py and implement the TODO sections:
+
+Hints for implementation:
+
+Use psutil.cpu_percent(), psutil.virtual_memory().percent, psutil.disk_usage('/').percent
+Compare metrics against thresholds to determine status
+Return "critical" if any metric exceeds limit, "warning" if above 70%, else "healthy"
+Step 2: Complete the Data Models
+Edit models.py and complete the PolicyCheckRequest and PolicyCheckResponse:
+
+# Example structure for PolicyCheckRequest
+class PolicyCheckRequest(BaseModel):
+    request_size: int = Field(..., description="Request size in bytes")
+    method: str = Field(..., description="HTTP method")
+    user_id: str = Field(..., description="User identifier")
+Step 3: Implement the API Endpoints
+Complete the TODO sections in main.py. Focus on:
+
+/health - Return service status and timestamp
+/status - Call policy functions and return system metrics
+/policy/check - Validate all policy rules and return combined result
+Middleware - Add basic logging with print statements
+Step 4: Run the Service
+# Ensure you're in the virtual environment
+source ~/fastapi-policy-service/venv/bin/activate
+
+# Run the FastAPI application
+cd ~/fastapi-policy-service
+python3 main.py
+The service should start on http://0.0.0.0:8000
+
+Step 5: Test the Endpoints
+Open a new terminal and run these tests:
+
+# Test health endpoint
+curl http://localhost:8000/health
+
+# Test system status
+curl http://localhost:8000/status
+
+# Test policy check (valid request)
+curl -X POST http://localhost:8000/policy/check \
+  -H "Content-Type: application/json" \
+  -d '{
+    "request_size": 1024,
+    "method": "GET",
+    "user_id": "user123"
+  }'
+
+# Test policy check (invalid - too large)
+curl -X POST http://localhost:8000/policy/check \
+  -H "Content-Type: application/json" \
+  -d '{
+    "request_size": 2000000,
+    "method": "GET",
+    "user_id": "user123"
+  }'
+
+# Test policy check (invalid method)
+curl -X POST http://localhost:8000/policy/check \
+  -H "Content-Type: application/json" \
+  -d '{
+    "request_size": 1024,
+    "method": "PATCH",
+    "user_id": "user123"
+  }'
+
+# List all policies
+curl http://localhost:8000/policies
+
+# Get resource limits
+curl http://localhost:8000/limits
+
+# View interactive API documentation
+# Open browser to: http://localhost:8000/docs
+Verification
+Verify Service Functionality
+Health Check Works:
+
+curl http://localhost:8000/health | jq
+Expected: JSON with status "ok" and current timestamp
+
+System Status Returns Metrics:
+
+curl http://localhost:8000/status | jq
+Expected: CPU, memory, disk percentages and overall status
+
+Policy Validation Works:
+
+# Should be allowed
+curl -X POST http://localhost:8000/policy/check \
+  -H "Content-Type: application/json" \
+  -d '{"request_size": 500, "method": "POST", "user_id": "test"}' | jq
+Expected: "allowed": true
+
+Policy Enforcement Works:
+
+# Should be denied
+curl -X POST http://localhost:8000/policy/check \
+  -H "Content-Type: application/json" \
+  -d '{"request_size": 9999999, "method": "GET", "user_id": "test"}' | jq
+Expected: "allowed": false with reason about size limit
+
+Check Logs: Review the terminal running the FastAPI service for request logs from your middleware
+
+Success Criteria
+All endpoints return valid JSON responses
+Status endpoint shows current system metrics
+Policy checks correctly allow/deny based on rules
+Invalid requests return appropriate error messages
+Service runs without crashes
+Middleware logs appear in console
+Troubleshooting Tips
+Service won't start:
+
+Check if port 8000 is already in use: sudo lsof -i :8000
+Kill existing process: sudo kill -9 <PID>
+Verify virtual environment is activated
+Import errors:
+
+Ensure all dependencies installed: pip list | grep -E "fastapi|uvicorn|pydantic|psutil"
+Reinstall if needed: pip install --upgrade fastapi uvicorn pydantic psutil
+Policy checks always fail:
+
+Verify PolicyCheckRequest model matches the JSON structure
+Check that policy functions return tuples: (bool, str)
+Print debug information in policy functions
+System status shows errors:
+
+Ensure psutil is installed correctly
+Test psutil directly: python3 -c "import psutil; print(psutil.cpu_percent())"
+Conclusion
+You've successfully built a FastAPI service that:
+
+Monitors system resources (CPU, memory, disk)
+Exposes status information via REST endpoints
+Enforces configurable policies on requests
+Validates request size, HTTP methods, and rate limits
+Implements middleware for request logging
+This type of service is essential in DevOps environments for:
+
+Health Monitoring: Tracking service and system health
+Policy Enforcement: Ensuring requests meet organizational standards
+Rate Limiting: Protecting services from abuse
+Observability: Logging and monitoring API usage
+These patterns are used in production systems for API gateways, service meshes, and microservice architectures. You can extend this lab by adding authentication, database storage for rate limiting, or integration with monitoring tools like Prometheus.
