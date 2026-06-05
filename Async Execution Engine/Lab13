@@ -1,0 +1,477 @@
+ Async Execution Engine
+Prerequisites
+Basic Python programming knowledge
+Understanding of functions and decorators
+Familiarity with Linux command line
+Basic understanding of concurrent programming concepts
+Python 3.8+ installed on your system
+Learning Objectives
+By completing this lab, you will:
+
+Implement asynchronous task execution using Python's asyncio
+Manage concurrency with task queues and worker pools
+Build a scalable execution engine for parallel task processing
+Monitor and control concurrent task execution
+Apply async patterns to improve application performance
+Environment Setup
+Your Linux machine is provided via the "Start Lab" button. Install the required tools:
+
+# Update package manager
+sudo apt update
+
+# Install Python 3 and pip if not present
+sudo apt install -y python3 python3-pip python3-venv
+
+# Create project directory
+mkdir -p ~/async-engine-lab
+cd ~/async-engine-lab
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install required packages
+pip install aiohttp aiofiles
+Task 1: Build the Async Task Executor
+Step 1: Create the Task Model
+Create a file task_model.py:
+
+from dataclasses import dataclass
+from typing import Any, Callable
+from enum import Enum
+import time
+
+class TaskStatus(Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+@dataclass
+class Task:
+    """Represents an executable task"""
+    task_id: str
+    func: Callable
+    args: tuple = ()
+    kwargs: dict = None
+    status: TaskStatus = TaskStatus.PENDING
+    result: Any = None
+    error: str = None
+    created_at: float = None
+    completed_at: float = None
+    
+    def __post_init__(self):
+        if self.kwargs is None:
+            self.kwargs = {}
+        if self.created_at is None:
+            self.created_at = time.time()
+Step 2: Implement the Async Execution Engine
+Create execution_engine.py:
+
+import asyncio
+from typing import List, Dict
+from task_model import Task, TaskStatus
+import time
+
+class AsyncExecutionEngine:
+    """
+    Manages asynchronous task execution with concurrency control.
+    """
+    
+    def __init__(self, max_workers: int = 5):
+        """
+        Initialize the execution engine.
+        
+        Args:
+            max_workers: Maximum number of concurrent tasks
+        """
+        self.max_workers = max_workers
+        self.task_queue = asyncio.Queue()
+        self.tasks: Dict[str, Task] = {}
+        self.workers: List[asyncio.Task] = []
+        self.running = False
+    
+    async def submit_task(self, task: Task) -> str:
+        """
+        Submit a task for execution.
+        
+        Args:
+            task: Task object to execute
+            
+        Returns:
+            task_id of the submitted task
+        """
+        # TODO: Add task to tasks dictionary
+        # TODO: Put task in the queue
+        # TODO: Return task_id
+        pass
+    
+    async def _worker(self, worker_id: int):
+        """
+        Worker coroutine that processes tasks from the queue.
+        
+        Args:
+            worker_id: Unique identifier for this worker
+        """
+        print(f"Worker {worker_id} started")
+        
+        while self.running:
+            try:
+                # TODO: Get task from queue with timeout
+                # TODO: Update task status to RUNNING
+                # TODO: Execute the task function
+                # TODO: Handle success and failure cases
+                # TODO: Update task completion time
+                pass
+            except asyncio.TimeoutError:
+                continue
+            except Exception as e:
+                print(f"Worker {worker_id} error: {e}")
+        
+        print(f"Worker {worker_id} stopped")
+    
+    async def start(self):
+        """Start the execution engine and worker pool."""
+        # TODO: Set running flag to True
+        # TODO: Create worker tasks using asyncio.create_task
+        # TODO: Store workers in self.workers list
+        pass
+    
+    async def stop(self):
+        """Stop the execution engine gracefully."""
+        # TODO: Set running flag to False
+        # TODO: Wait for all workers to complete
+        # TODO: Cancel any remaining workers
+        pass
+    
+    def get_task_status(self, task_id: str) -> Dict:
+        """
+        Get the status of a specific task.
+        
+        Args:
+            task_id: ID of the task to check
+            
+        Returns:
+            Dictionary with task status information
+        """
+        # TODO: Retrieve task from tasks dictionary
+        # TODO: Return formatted status dictionary
+        pass
+    
+    def get_statistics(self) -> Dict:
+        """
+        Get execution statistics.
+        
+        Returns:
+            Dictionary with engine statistics
+        """
+        # TODO: Count tasks by status
+        # TODO: Calculate average execution time
+        # TODO: Return statistics dictionary
+        pass
+Step 3: Create Sample Task Functions
+Create sample_tasks.py:
+
+import asyncio
+import aiohttp
+import aiofiles
+
+async def fetch_url(url: str) -> dict:
+    """
+    Fetch content from a URL asynchronously.
+    
+    Args:
+        url: URL to fetch
+        
+    Returns:
+        Dictionary with status and content length
+    """
+    # TODO: Use aiohttp to fetch the URL
+    # TODO: Return status code and content length
+    pass
+
+async def process_file(filename: str, operation: str) -> dict:
+    """
+    Process a file asynchronously.
+    
+    Args:
+        filename: Path to file
+        operation: Operation to perform (read/write)
+        
+    Returns:
+        Dictionary with operation result
+    """
+    # TODO: Implement async file operations using aiofiles
+    # TODO: Handle read and write operations
+    pass
+
+async def compute_intensive_task(n: int) -> int:
+    """
+    Simulate a compute-intensive task.
+    
+    Args:
+        n: Number to process
+        
+    Returns:
+        Computed result
+    """
+    # TODO: Implement computation with asyncio.sleep to simulate work
+    # TODO: Return computed result
+    pass
+Step 4: Implement the Main Application
+Create main.py:
+
+import asyncio
+from execution_engine import AsyncExecutionEngine
+from task_model import Task
+from sample_tasks import fetch_url, compute_intensive_task, process_file
+import uuid
+
+async def main():
+    """Main application demonstrating the async execution engine."""
+    
+    # Initialize engine
+    engine = AsyncExecutionEngine(max_workers=3)
+    await engine.start()
+    
+    print("Async Execution Engine Started")
+    print("-" * 50)
+    
+    # TODO: Create and submit multiple tasks
+    # Example task creation:
+    # task1 = Task(
+    #     task_id=str(uuid.uuid4()),
+    #     func=compute_intensive_task,
+    #     args=(5,)
+    # )
+    
+    # TODO: Submit tasks to engine
+    
+    # TODO: Wait for tasks to complete
+    
+    # TODO: Display task results
+    
+    # TODO: Print statistics
+    
+    # Stop engine
+    await engine.stop()
+    print("\nEngine stopped")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+Step 5: Test Your Implementation
+Create test files for file operations:
+
+# Create test files
+echo "Sample data for testing" > ~/async-engine-lab/test_input.txt
+Run your implementation:
+
+cd ~/async-engine-lab
+source venv/bin/activate
+python main.py
+Task 2: Add Monitoring and Control Features
+Step 1: Implement Task Cancellation
+Add to execution_engine.py:
+
+async def cancel_task(self, task_id: str) -> bool:
+    """
+    Cancel a pending or running task.
+    
+    Args:
+        task_id: ID of task to cancel
+        
+    Returns:
+        True if cancelled, False otherwise
+    """
+    # TODO: Check if task exists
+    # TODO: Check if task can be cancelled (not completed/failed)
+    # TODO: Update task status to FAILED with cancellation message
+    # TODO: Return success status
+    pass
+Step 2: Add Priority Queue Support
+Modify execution_engine.py to support task priorities:
+
+from dataclasses import dataclass, field
+from typing import Any
+
+@dataclass(order=True)
+class PrioritizedTask:
+    """Wrapper for tasks with priority."""
+    priority: int
+    task: Any = field(compare=False)
+    
+    def __init__(self, priority: int, task: Task):
+        self.priority = priority
+        self.task = task
+Update the __init__ method:
+
+def __init__(self, max_workers: int = 5, use_priority: bool = False):
+    """
+    Initialize the execution engine.
+    
+    Args:
+        max_workers: Maximum number of concurrent tasks
+        use_priority: Enable priority-based task execution
+    """
+    # TODO: Initialize with PriorityQueue if use_priority is True
+    # TODO: Otherwise use regular Queue
+    pass
+Step 3: Create a Monitoring Dashboard
+Create monitor.py:
+
+import asyncio
+from execution_engine import AsyncExecutionEngine
+
+class EngineMonitor:
+    """Monitor and display engine statistics."""
+    
+    def __init__(self, engine: AsyncExecutionEngine):
+        self.engine = engine
+        self.monitoring = False
+    
+    async def display_stats(self, interval: int = 2):
+        """
+        Display engine statistics periodically.
+        
+        Args:
+            interval: Update interval in seconds
+        """
+        self.monitoring = True
+        
+        while self.monitoring:
+            # TODO: Clear screen (print newlines or use os.system('clear'))
+            # TODO: Get and display statistics
+            # TODO: Display active workers count
+            # TODO: Display queue size
+            # TODO: Sleep for interval
+            pass
+    
+    def stop(self):
+        """Stop monitoring."""
+        self.monitoring = False
+Step 4: Create Advanced Test Scenarios
+Create advanced_test.py:
+
+import asyncio
+from execution_engine import AsyncExecutionEngine
+from task_model import Task
+from sample_tasks import compute_intensive_task
+from monitor import EngineMonitor
+import uuid
+
+async def stress_test():
+    """
+    Stress test the execution engine with many tasks.
+    """
+    # TODO: Create engine with specific worker count
+    # TODO: Start engine
+    # TODO: Submit 20+ tasks with varying complexity
+    # TODO: Start monitor in separate task
+    # TODO: Wait for completion
+    # TODO: Display final statistics
+    pass
+
+async def priority_test():
+    """
+    Test priority-based task execution.
+    """
+    # TODO: Create engine with priority support
+    # TODO: Submit tasks with different priorities
+    # TODO: Verify execution order matches priorities
+    pass
+
+if __name__ == "__main__":
+    print("Select test:")
+    print("1. Stress Test")
+    print("2. Priority Test")
+    choice = input("Enter choice (1-2): ")
+    
+    if choice == "1":
+        asyncio.run(stress_test())
+    elif choice == "2":
+        asyncio.run(priority_test())
+Verification
+Test 1: Basic Functionality
+# Run main application
+python main.py
+Expected output should show:
+
+Engine starting with workers
+Tasks being submitted
+Tasks completing with results
+Statistics showing completed tasks
+Test 2: Concurrent Execution
+# Run advanced tests
+python advanced_test.py
+Verify:
+
+Multiple tasks execute concurrently
+Worker pool manages concurrency correctly
+No race conditions or deadlocks
+Statistics are accurate
+Test 3: Error Handling
+Modify a task to raise an exception and verify:
+
+Task status changes to FAILED
+Error message is captured
+Other tasks continue executing
+Engine remains stable
+Test 4: Performance Check
+# Time sequential vs concurrent execution
+python -c "
+import asyncio
+import time
+from execution_engine import AsyncExecutionEngine
+from task_model import Task
+from sample_tasks import compute_intensive_task
+import uuid
+
+async def test():
+    engine = AsyncExecutionEngine(max_workers=5)
+    await engine.start()
+    
+    start = time.time()
+    tasks = [Task(str(uuid.uuid4()), compute_intensive_task, (3,)) for _ in range(10)]
+    for t in tasks:
+        await engine.submit_task(t)
+    
+    await asyncio.sleep(5)
+    print(f'Time: {time.time() - start:.2f}s')
+    await engine.stop()
+
+asyncio.run(test())
+"
+Troubleshooting
+Issue: Tasks not executing
+
+Check if engine.start() was called
+Verify workers are created correctly
+Ensure task queue is not empty
+Issue: RuntimeError about event loop
+
+Use asyncio.run() for top-level execution
+Don't mix sync and async code incorrectly
+Issue: Tasks hanging indefinitely
+
+Add timeout to task execution
+Check for blocking operations in async functions
+Use await for all async calls
+Issue: Import errors
+
+Verify virtual environment is activated
+Reinstall packages: pip install aiohttp aiofiles
+Conclusion
+You have successfully built an asynchronous execution engine that:
+
+Manages concurrent task execution with worker pools
+Handles task queuing and scheduling
+Provides monitoring and statistics
+Implements error handling and task cancellation
+This pattern is fundamental in DevOps for:
+
+CI/CD pipeline execution
+Distributed task processing
+API request handling
+Log processing and aggregation
+Infrastructure automation
+The async execution model significantly improves scalability by allowing efficient I/O-bound operation handling without blocking threads, making it ideal for modern cloud-native applications.
