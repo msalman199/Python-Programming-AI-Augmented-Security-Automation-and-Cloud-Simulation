@@ -1,0 +1,476 @@
+Test Strategy Upgrade
+Prerequisites
+Basic understanding of Python programming
+Familiarity with Git and version control
+Knowledge of basic testing concepts (unit tests, assertions)
+Experience with command-line operations in Linux
+Understanding of software development lifecycle
+Learning Objectives
+By completing this lab, you will:
+
+Implement a multi-layered testing strategy for Python applications
+Create unit tests for individual components
+Develop integration tests for component interactions
+Improve test assertions for better failure diagnostics
+Understand test coverage metrics and reporting
+Environment Setup
+After clicking "Start Lab", you'll have access to a Linux machine. Install the required tools:
+
+# Update package manager
+sudo apt update
+
+# Install Python and pip
+sudo apt install -y python3 python3-pip python3-venv
+
+# Create project directory
+mkdir -p ~/test-strategy-lab
+cd ~/test-strategy-lab
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install testing tools
+pip install pytest pytest-cov pytest-mock
+Task 1: Define Test Layers and Create Application Structure
+Step 1: Create the Application Structure
+Create a simple e-commerce order processing application:
+
+mkdir -p src/order_system tests/{unit,integration}
+touch src/__init__.py src/order_system/__init__.py
+touch tests/__init__.py tests/unit/__init__.py tests/integration/__init__.py
+Step 2: Implement Core Application Components
+Create src/order_system/models.py:
+
+from dataclasses import dataclass
+from typing import List
+from decimal import Decimal
+
+@dataclass
+class Product:
+    id: str
+    name: str
+    price: Decimal
+    stock: int
+
+@dataclass
+class OrderItem:
+    product: Product
+    quantity: int
+    
+    def get_subtotal(self) -> Decimal:
+        """Calculate subtotal for this order item"""
+        # TODO: Implement subtotal calculation
+        pass
+
+@dataclass
+class Order:
+    order_id: str
+    items: List[OrderItem]
+    discount_percent: Decimal = Decimal('0')
+    
+    def calculate_total(self) -> Decimal:
+        """Calculate order total with discount applied"""
+        # TODO: Calculate sum of all item subtotals
+        # TODO: Apply discount percentage
+        # TODO: Return final total
+        pass
+Create src/order_system/inventory.py:
+
+from typing import Dict, Optional
+from .models import Product
+
+class InventoryManager:
+    def __init__(self):
+        self.products: Dict[str, Product] = {}
+    
+    def add_product(self, product: Product) -> None:
+        """Add a product to inventory"""
+        # TODO: Add product to products dictionary
+        pass
+    
+    def get_product(self, product_id: str) -> Optional[Product]:
+        """Retrieve a product by ID"""
+        # TODO: Return product if exists, None otherwise
+        pass
+    
+    def check_availability(self, product_id: str, quantity: int) -> bool:
+        """Check if requested quantity is available"""
+        # TODO: Verify product exists
+        # TODO: Check if stock >= quantity
+        pass
+    
+    def reduce_stock(self, product_id: str, quantity: int) -> bool:
+        """Reduce stock after order placement"""
+        # TODO: Verify availability first
+        # TODO: Reduce stock if available
+        # TODO: Return success status
+        pass
+Create src/order_system/processor.py:
+
+from typing import List, Tuple
+from .models import Order, OrderItem, Product
+from .inventory import InventoryManager
+
+class OrderProcessor:
+    def __init__(self, inventory_manager: InventoryManager):
+        self.inventory = inventory_manager
+        self.processed_orders: List[Order] = []
+    
+    def validate_order(self, order: Order) -> Tuple[bool, str]:
+        """
+        Validate order items against inventory
+        
+        Returns:
+            Tuple of (is_valid, error_message)
+        """
+        # TODO: Check if order has items
+        # TODO: Validate each item's availability
+        # TODO: Return (True, "") if valid, (False, error_msg) otherwise
+        pass
+    
+    def process_order(self, order: Order) -> Tuple[bool, str]:
+        """
+        Process an order: validate and update inventory
+        
+        Returns:
+            Tuple of (success, message)
+        """
+        # TODO: Validate order first
+        # TODO: Reduce stock for each item
+        # TODO: Add to processed_orders if successful
+        # TODO: Return appropriate status and message
+        pass
+Step 3: Create Test Configuration
+Create pytest.ini:
+
+[pytest]
+testpaths = tests
+python_files = test_*.py
+python_classes = Test*
+python_functions = test_*
+addopts = 
+    -v
+    --tb=short
+    --strict-markers
+markers =
+    unit: Unit tests for individual components
+    integration: Integration tests for component interactions
+    slow: Tests that take longer to execute
+Task 2: Implement Unit Tests with Improved Assertions
+Step 1: Create Unit Tests for Models
+Create tests/unit/test_models.py:
+
+import pytest
+from decimal import Decimal
+from src.order_system.models import Product, OrderItem, Order
+
+class TestProduct:
+    """Unit tests for Product model"""
+    
+    def test_product_creation(self):
+        """Test product instantiation with valid data"""
+        # TODO: Create a product instance
+        # TODO: Assert all attributes are set correctly
+        # TODO: Use specific assertion messages for clarity
+        pass
+    
+    def test_product_price_type(self):
+        """Test that price is stored as Decimal"""
+        # TODO: Create product with Decimal price
+        # TODO: Assert price type is Decimal
+        # TODO: Assert price value is exact
+        pass
+
+class TestOrderItem:
+    """Unit tests for OrderItem model"""
+    
+    @pytest.fixture
+    def sample_product(self):
+        """Fixture providing a sample product"""
+        return Product(
+            id="P001",
+            name="Test Product",
+            price=Decimal('29.99'),
+            stock=100
+        )
+    
+    def test_order_item_subtotal(self, sample_product):
+        """Test subtotal calculation for order item"""
+        # TODO: Create OrderItem with quantity 3
+        # TODO: Calculate expected subtotal
+        # TODO: Assert calculated subtotal matches expected
+        # TODO: Use descriptive assertion message
+        pass
+    
+    def test_order_item_subtotal_single_quantity(self, sample_product):
+        """Test subtotal with quantity of 1"""
+        # TODO: Create OrderItem with quantity 1
+        # TODO: Assert subtotal equals product price
+        pass
+
+class TestOrder:
+    """Unit tests for Order model"""
+    
+    @pytest.fixture
+    def sample_order_items(self):
+        """Fixture providing sample order items"""
+        # TODO: Create 2-3 sample products
+        # TODO: Create OrderItems from products
+        # TODO: Return list of OrderItems
+        pass
+    
+    def test_order_total_no_discount(self, sample_order_items):
+        """Test order total calculation without discount"""
+        # TODO: Create order with items, no discount
+        # TODO: Calculate expected total manually
+        # TODO: Assert order.calculate_total() matches expected
+        pass
+    
+    def test_order_total_with_discount(self, sample_order_items):
+        """Test order total with discount applied"""
+        # TODO: Create order with 10% discount
+        # TODO: Calculate expected total with discount
+        # TODO: Assert calculated total is correct
+        # TODO: Verify discount was applied properly
+        pass
+    
+    def test_order_empty_items(self):
+        """Test order with no items"""
+        # TODO: Create order with empty items list
+        # TODO: Assert total is zero
+        pass
+Step 2: Create Unit Tests for Inventory Manager
+Create tests/unit/test_inventory.py:
+
+import pytest
+from decimal import Decimal
+from src.order_system.models import Product
+from src.order_system.inventory import InventoryManager
+
+class TestInventoryManager:
+    """Unit tests for InventoryManager"""
+    
+    @pytest.fixture
+    def inventory(self):
+        """Fixture providing fresh InventoryManager instance"""
+        return InventoryManager()
+    
+    @pytest.fixture
+    def sample_product(self):
+        """Fixture providing a sample product"""
+        return Product(
+            id="P001",
+            name="Laptop",
+            price=Decimal('999.99'),
+            stock=10
+        )
+    
+    def test_add_product(self, inventory, sample_product):
+        """Test adding product to inventory"""
+        # TODO: Add product to inventory
+        # TODO: Assert product exists in inventory
+        # TODO: Assert product details are correct
+        pass
+    
+    def test_get_product_exists(self, inventory, sample_product):
+        """Test retrieving existing product"""
+        # TODO: Add product to inventory
+        # TODO: Retrieve product by ID
+        # TODO: Assert retrieved product matches original
+        pass
+    
+    def test_get_product_not_exists(self, inventory):
+        """Test retrieving non-existent product"""
+        # TODO: Attempt to get product that doesn't exist
+        # TODO: Assert result is None
+        pass
+    
+    def test_check_availability_sufficient_stock(self, inventory, sample_product):
+        """Test availability check with sufficient stock"""
+        # TODO: Add product with stock=10
+        # TODO: Check availability for quantity=5
+        # TODO: Assert availability is True
+        pass
+    
+    def test_check_availability_insufficient_stock(self, inventory, sample_product):
+        """Test availability check with insufficient stock"""
+        # TODO: Add product with stock=10
+        # TODO: Check availability for quantity=15
+        # TODO: Assert availability is False
+        pass
+    
+    def test_reduce_stock_success(self, inventory, sample_product):
+        """Test successful stock reduction"""
+        # TODO: Add product with stock=10
+        # TODO: Reduce stock by 3
+        # TODO: Assert operation succeeded
+        # TODO: Assert remaining stock is 7
+        pass
+    
+    def test_reduce_stock_failure(self, inventory, sample_product):
+        """Test stock reduction failure with insufficient stock"""
+        # TODO: Add product with stock=10
+        # TODO: Attempt to reduce stock by 15
+        # TODO: Assert operation failed
+        # TODO: Assert stock remains unchanged
+        pass
+Task 3: Implement Integration Tests
+Step 1: Create Integration Tests for Order Processing
+Create tests/integration/test_order_processing.py:
+
+import pytest
+from decimal import Decimal
+from src.order_system.models import Product, OrderItem, Order
+from src.order_system.inventory import InventoryManager
+from src.order_system.processor import OrderProcessor
+
+class TestOrderProcessingIntegration:
+    """Integration tests for complete order processing workflow"""
+    
+    @pytest.fixture
+    def setup_system(self):
+        """Fixture setting up complete system with inventory"""
+        inventory = InventoryManager()
+        processor = OrderProcessor(inventory)
+        
+        # Add sample products
+        products = [
+            Product("P001", "Laptop", Decimal('999.99'), 5),
+            Product("P002", "Mouse", Decimal('29.99'), 20),
+            Product("P003", "Keyboard", Decimal('79.99'), 15)
+        ]
+        
+        for product in products:
+            inventory.add_product(product)
+        
+        return {
+            'inventory': inventory,
+            'processor': processor,
+            'products': products
+        }
+    
+    def test_successful_order_processing(self, setup_system):
+        """Test complete successful order flow"""
+        # TODO: Create order with available items
+        # TODO: Process the order
+        # TODO: Assert processing succeeded
+        # TODO: Assert inventory stock was reduced
+        # TODO: Assert order was added to processed_orders
+        pass
+    
+    def test_order_validation_failure_out_of_stock(self, setup_system):
+        """Test order validation fails for out-of-stock items"""
+        # TODO: Create order with quantity exceeding stock
+        # TODO: Validate the order
+        # TODO: Assert validation failed
+        # TODO: Assert appropriate error message
+        pass
+    
+    def test_order_processing_failure_maintains_inventory(self, setup_system):
+        """Test that failed orders don't modify inventory"""
+        # TODO: Get initial stock levels
+        # TODO: Create invalid order (out of stock)
+        # TODO: Attempt to process order
+        # TODO: Assert processing failed
+        # TODO: Assert inventory remains unchanged
+        pass
+    
+    def test_multiple_orders_sequential_processing(self, setup_system):
+        """Test processing multiple orders sequentially"""
+        # TODO: Create 2-3 valid orders
+        # TODO: Process each order
+        # TODO: Assert all succeeded
+        # TODO: Assert inventory reflects all reductions
+        # TODO: Assert all orders in processed_orders list
+        pass
+    
+    def test_order_with_discount_integration(self, setup_system):
+        """Test order processing with discount applied"""
+        # TODO: Create order with discount
+        # TODO: Process order
+        # TODO: Assert processing succeeded
+        # TODO: Verify total calculation includes discount
+        # TODO: Verify inventory updated correctly
+        pass
+Step 2: Run Tests with Coverage
+Create a test runner script run_tests.sh:
+
+#!/bin/bash
+
+echo "Running Unit Tests..."
+pytest tests/unit -m unit -v
+
+echo -e "\nRunning Integration Tests..."
+pytest tests/integration -m integration -v
+
+echo -e "\nRunning All Tests with Coverage..."
+pytest tests/ --cov=src/order_system --cov-report=html --cov-report=term
+
+echo -e "\nCoverage report generated in htmlcov/index.html"
+Make it executable:
+
+chmod +x run_tests.sh
+Verification
+Step 1: Implement All TODO Items
+Complete all the TODO sections in the code files you created.
+
+Step 2: Run Unit Tests
+# Run only unit tests
+pytest tests/unit -v
+
+# Expected output should show all unit tests passing
+Step 3: Run Integration Tests
+# Run only integration tests
+pytest tests/integration -v
+
+# Expected output should show all integration tests passing
+Step 4: Check Test Coverage
+# Run tests with coverage report
+pytest tests/ --cov=src/order_system --cov-report=term-missing
+
+# Target: Aim for >80% coverage
+Step 5: Verify Test Quality
+Run specific test categories:
+
+# Run with verbose output to see assertion details
+pytest tests/ -v --tb=long
+
+# Run with specific markers
+pytest -m unit
+pytest -m integration
+Step 6: Review Coverage Report
+# Generate HTML coverage report
+pytest tests/ --cov=src/order_system --cov-report=html
+
+# View the report (if GUI available)
+python3 -m http.server 8000 --directory htmlcov
+# Access via browser at http://localhost:8000
+Expected Outcomes
+After completing this lab, you should have:
+
+Multi-layered test structure: Separate unit and integration test directories
+Comprehensive unit tests: Testing individual components in isolation
+Integration tests: Testing component interactions and workflows
+Improved assertions: Descriptive messages and specific checks
+Test coverage metrics: Understanding of code coverage and gaps
+Working application: Functional order processing system with full test suite
+Success Criteria
+All unit tests pass (minimum 10 tests)
+All integration tests pass (minimum 5 tests)
+Test coverage above 80%
+Clear test organization by layer
+Descriptive test names and assertion messages
+Troubleshooting Tips
+Import errors: Ensure you're running tests from the project root directory and virtual environment is activated
+
+Decimal precision issues: Always use Decimal for monetary calculations, not float
+
+Fixture not found: Check that fixtures are defined in the same test class or in conftest.py
+
+Coverage not showing: Verify the --cov path matches your source directory structure
+
+Tests passing but coverage low: Check for untested edge cases and error conditions
+
+Conclusion
+You've successfully implemented a comprehensive test strategy with multiple layers. You created unit tests for individual components, integration tests for system workflows, and improved test assertions for better diagnostics. This approach ensures code reliability, easier debugging, and confidence in refactoring. The skills you've developed are essential for DevOps engineers maintaining production systems where test quality directly impacts deployment confidence and system stability.
