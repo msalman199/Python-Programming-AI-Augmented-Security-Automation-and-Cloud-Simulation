@@ -1,0 +1,563 @@
+Dependency-Aware Pipeline Runner
+Prerequisites
+Basic Python programming knowledge
+Understanding of graphs and data structures
+Familiarity with Linux command line
+Basic understanding of CI/CD concepts
+Learning Objectives
+By completing this lab, you will:
+
+Model job dependencies using directed acyclic graphs (DAGs)
+Implement topological sorting to resolve execution order
+Handle job failures and dependency propagation
+Build a practical pipeline execution system
+Environment Setup
+After clicking "Start Lab", you'll have access to a Linux machine. Install the required tools:
+
+# Update package manager
+sudo apt update
+
+# Install Python 3 and pip
+sudo apt install -y python3 python3-pip python3-venv
+
+# Create project directory
+mkdir -p ~/pipeline-runner
+cd ~/pipeline-runner
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install required packages
+pip install pyyaml
+Task 1: Model Job Dependencies
+Step 1: Create the Project Structure
+cd ~/pipeline-runner
+touch pipeline_runner.py
+touch pipeline_config.yaml
+touch test_pipeline.py
+Step 2: Define the Job Class
+Create pipeline_runner.py with the following starter code:
+
+#!/usr/bin/env python3
+"""
+Dependency-Aware Pipeline Runner
+Executes jobs based on their dependencies using topological sorting
+"""
+
+import time
+import yaml
+from typing import Dict, List, Set, Optional
+from enum import Enum
+from collections import defaultdict, deque
+
+
+class JobStatus(Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCESS = "success"
+    FAILED = "failed"
+    SKIPPED = "skipped"
+
+
+class Job:
+    """Represents a single job in the pipeline"""
+    
+    def __init__(self, name: str, command: str, dependencies: List[str] = None):
+        self.name = name
+        self.command = command
+        self.dependencies = dependencies or []
+        self.status = JobStatus.PENDING
+        self.start_time = None
+        self.end_time = None
+        self.error_message = None
+    
+    def execute(self) -> bool:
+        """
+        Execute the job command.
+        
+        Returns:
+            bool: True if successful, False otherwise
+        
+        TODO: Implement job execution logic
+        - Set status to RUNNING
+        - Record start_time
+        - Execute the command using subprocess or eval for simple commands
+        - Handle success/failure
+        - Record end_time
+        - Return execution result
+        """
+        pass
+    
+    def __repr__(self):
+        return f"Job({self.name}, status={self.status.value})"
+Step 3: Implement the Pipeline Runner Class
+Add the following class structure to pipeline_runner.py:
+
+class PipelineRunner:
+    """Manages and executes jobs based on dependencies"""
+    
+    def __init__(self, config_file: str):
+        self.jobs: Dict[str, Job] = {}
+        self.dependency_graph: Dict[str, List[str]] = defaultdict(list)
+        self.reverse_graph: Dict[str, List[str]] = defaultdict(list)
+        self.load_config(config_file)
+    
+    def load_config(self, config_file: str):
+        """
+        Load pipeline configuration from YAML file.
+        
+        TODO: Implement configuration loading
+        - Read YAML file
+        - Create Job objects
+        - Build dependency_graph (job -> dependents)
+        - Build reverse_graph (job -> dependencies)
+        """
+        pass
+    
+    def validate_dag(self) -> bool:
+        """
+        Validate that the dependency graph is a DAG (no cycles).
+        
+        Returns:
+            bool: True if valid DAG, False if cycles detected
+        
+        TODO: Implement cycle detection using DFS or Kahn's algorithm
+        - Use color-based DFS (white, gray, black) or
+        - Track visited nodes and recursion stack
+        - Return False if cycle found
+        """
+        pass
+    
+    def topological_sort(self) -> List[str]:
+        """
+        Perform topological sort to determine execution order.
+        
+        Returns:
+            List[str]: Ordered list of job names
+        
+        TODO: Implement topological sorting
+        - Use Kahn's algorithm (BFS-based) or DFS-based approach
+        - Calculate in-degrees for each node
+        - Process nodes with zero in-degree
+        - Return sorted order
+        """
+        pass
+    
+    def can_execute(self, job_name: str) -> bool:
+        """
+        Check if a job's dependencies are satisfied.
+        
+        TODO: Implement dependency checking
+        - Check all dependencies have SUCCESS status
+        - Return True only if all dependencies succeeded
+        """
+        pass
+    
+    def mark_downstream_skipped(self, job_name: str):
+        """
+        Mark all downstream jobs as skipped when a job fails.
+        
+        TODO: Implement downstream propagation
+        - Use BFS or DFS to find all dependent jobs
+        - Set their status to SKIPPED
+        """
+        pass
+    
+    def execute_pipeline(self) -> Dict[str, JobStatus]:
+        """
+        Execute all jobs in dependency order.
+        
+        Returns:
+            Dict[str, JobStatus]: Final status of all jobs
+        
+        TODO: Implement pipeline execution
+        - Get execution order from topological_sort
+        - For each job in order:
+          - Check if can_execute
+          - Execute if ready
+          - Handle failures (mark downstream as skipped)
+        - Return final status dictionary
+        """
+        pass
+    
+    def print_summary(self):
+        """Print execution summary"""
+        print("\n" + "="*60)
+        print("PIPELINE EXECUTION SUMMARY")
+        print("="*60)
+        
+        for job_name, job in self.jobs.items():
+            duration = ""
+            if job.start_time and job.end_time:
+                duration = f" ({job.end_time - job.start_time:.2f}s)"
+            
+            status_symbol = {
+                JobStatus.SUCCESS: "✓",
+                JobStatus.FAILED: "✗",
+                JobStatus.SKIPPED: "⊘",
+                JobStatus.PENDING: "○"
+            }.get(job.status, "?")
+            
+            print(f"{status_symbol} {job_name}: {job.status.value}{duration}")
+            if job.error_message:
+                print(f"  Error: {job.error_message}")
+        
+        print("="*60)
+Step 4: Create Sample Pipeline Configuration
+Create pipeline_config.yaml:
+
+jobs:
+  - name: checkout
+    command: "echo 'Checking out code...'"
+    dependencies: []
+  
+  - name: install_deps
+    command: "echo 'Installing dependencies...'"
+    dependencies:
+      - checkout
+  
+  - name: lint
+    command: "echo 'Running linter...'"
+    dependencies:
+      - install_deps
+  
+  - name: unit_tests
+    command: "echo 'Running unit tests...'"
+    dependencies:
+      - install_deps
+  
+  - name: integration_tests
+    command: "echo 'Running integration tests...'"
+    dependencies:
+      - unit_tests
+  
+  - name: build
+    command: "echo 'Building application...'"
+    dependencies:
+      - lint
+      - unit_tests
+  
+  - name: deploy
+    command: "echo 'Deploying application...'"
+    dependencies:
+      - build
+      - integration_tests
+Task 2: Implement Core Functionality
+Step 1: Complete the Job Execution Method
+Implement the execute() method in the Job class:
+
+def execute(self) -> bool:
+    """Execute the job command"""
+    import subprocess
+    
+    self.status = JobStatus.RUNNING
+    self.start_time = time.time()
+    
+    print(f"\n[RUNNING] {self.name}")
+    print(f"Command: {self.command}")
+    
+    try:
+        # TODO: Execute command using subprocess
+        # Hint: Use subprocess.run() with shell=True
+        # Capture output and check return code
+        # Set status to SUCCESS or FAILED based on result
+        
+        result = subprocess.run(
+            self.command,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        # TODO: Handle result
+        # if result.returncode == 0: SUCCESS
+        # else: FAILED with error_message
+        
+        self.end_time = time.time()
+        return self.status == JobStatus.SUCCESS
+        
+    except Exception as e:
+        # TODO: Handle exceptions
+        # Set status to FAILED
+        # Store error message
+        self.end_time = time.time()
+        return False
+Step 2: Implement Topological Sort
+Complete the topological_sort() method using Kahn's algorithm:
+
+def topological_sort(self) -> List[str]:
+    """Perform topological sort using Kahn's algorithm"""
+    
+    # TODO: Calculate in-degrees
+    in_degree = {job: 0 for job in self.jobs}
+    
+    # TODO: Count incoming edges for each node
+    # Hint: Use self.reverse_graph
+    
+    # TODO: Find all nodes with in-degree 0
+    queue = deque()
+    # Add jobs with no dependencies to queue
+    
+    sorted_order = []
+    
+    # TODO: Process queue
+    # while queue is not empty:
+    #   - Remove node from queue
+    #   - Add to sorted_order
+    #   - For each dependent, decrease in-degree
+    #   - If in-degree becomes 0, add to queue
+    
+    return sorted_order
+Step 3: Implement Cycle Detection
+Complete the validate_dag() method:
+
+def validate_dag(self) -> bool:
+    """Validate DAG using DFS cycle detection"""
+    
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color = {job: WHITE for job in self.jobs}
+    
+    def has_cycle(node: str) -> bool:
+        """DFS helper to detect cycles"""
+        # TODO: Implement DFS cycle detection
+        # - Mark node as GRAY (visiting)
+        # - For each neighbor:
+        #   - If GRAY: cycle found
+        #   - If WHITE: recurse
+        # - Mark node as BLACK (visited)
+        # - Return cycle status
+        pass
+    
+    # TODO: Check all nodes
+    for job in self.jobs:
+        if color[job] == WHITE:
+            if has_cycle(job):
+                return False
+    
+    return True
+Step 4: Complete Pipeline Execution
+Implement the execute_pipeline() method:
+
+def execute_pipeline(self) -> Dict[str, JobStatus]:
+    """Execute pipeline in dependency order"""
+    
+    print("\n" + "="*60)
+    print("STARTING PIPELINE EXECUTION")
+    print("="*60)
+    
+    # TODO: Validate DAG
+    if not self.validate_dag():
+        print("ERROR: Cycle detected in dependencies!")
+        return {}
+    
+    # TODO: Get execution order
+    execution_order = self.topological_sort()
+    print(f"\nExecution order: {' -> '.join(execution_order)}")
+    
+    # TODO: Execute jobs in order
+    for job_name in execution_order:
+        job = self.jobs[job_name]
+        
+        # TODO: Check if can execute
+        # if not self.can_execute(job_name):
+        #     job.status = JobStatus.SKIPPED
+        #     continue
+        
+        # TODO: Execute job
+        # success = job.execute()
+        
+        # TODO: Handle failure
+        # if not success:
+        #     self.mark_downstream_skipped(job_name)
+    
+    return {name: job.status for name, job in self.jobs.items()}
+Step 5: Create Main Entry Point
+Add to the end of pipeline_runner.py:
+
+def main():
+    """Main entry point"""
+    import sys
+    
+    if len(sys.argv) < 2:
+        print("Usage: python3 pipeline_runner.py <config_file>")
+        sys.exit(1)
+    
+    config_file = sys.argv[1]
+    
+    runner = PipelineRunner(config_file)
+    runner.execute_pipeline()
+    runner.print_summary()
+
+
+if __name__ == "__main__":
+    main()
+Task 3: Test with Failure Scenarios
+Step 1: Create Test Configuration with Failure
+Create pipeline_config_fail.yaml:
+
+jobs:
+  - name: setup
+    command: "echo 'Setup complete'"
+    dependencies: []
+  
+  - name: test_unit
+    command: "echo 'Unit tests passed'"
+    dependencies:
+      - setup
+  
+  - name: test_integration
+    command: "exit 1"  # This will fail
+    dependencies:
+      - setup
+  
+  - name: build
+    command: "echo 'Building...'"
+    dependencies:
+      - test_unit
+      - test_integration
+  
+  - name: deploy
+    command: "echo 'Deploying...'"
+    dependencies:
+      - build
+Step 2: Create Test Script
+Create test_pipeline.py:
+
+#!/usr/bin/env python3
+"""Test script for pipeline runner"""
+
+import os
+import sys
+
+def test_successful_pipeline():
+    """Test pipeline with all successful jobs"""
+    print("\n" + "="*60)
+    print("TEST 1: Successful Pipeline")
+    print("="*60)
+    os.system("python3 pipeline_runner.py pipeline_config.yaml")
+
+def test_failed_pipeline():
+    """Test pipeline with job failure"""
+    print("\n" + "="*60)
+    print("TEST 2: Pipeline with Failure")
+    print("="*60)
+    os.system("python3 pipeline_runner.py pipeline_config_fail.yaml")
+
+if __name__ == "__main__":
+    test_successful_pipeline()
+    test_failed_pipeline()
+Step 3: Run Tests
+# Make scripts executable
+chmod +x pipeline_runner.py test_pipeline.py
+
+# Run successful pipeline
+python3 pipeline_runner.py pipeline_config.yaml
+
+# Run pipeline with failures
+python3 pipeline_runner.py pipeline_config_fail.yaml
+
+# Run all tests
+python3 test_pipeline.py
+Verification
+Step 1: Verify Dependency Resolution
+Your pipeline should execute jobs in the correct order:
+
+python3 pipeline_runner.py pipeline_config.yaml
+Expected output should show:
+
+Jobs executed in dependency order
+No job runs before its dependencies
+All jobs marked as SUCCESS
+Step 2: Verify Failure Handling
+python3 pipeline_runner.py pipeline_config_fail.yaml
+Expected behavior:
+
+test_integration fails
+build is skipped (depends on failed job)
+deploy is skipped (depends on skipped job)
+test_unit succeeds (independent path)
+Step 3: Create Complex Pipeline
+Create pipeline_complex.yaml to test your implementation:
+
+jobs:
+  - name: init
+    command: "echo 'Initializing...'"
+    dependencies: []
+  
+  - name: task_a
+    command: "sleep 1 && echo 'Task A done'"
+    dependencies: [init]
+  
+  - name: task_b
+    command: "sleep 1 && echo 'Task B done'"
+    dependencies: [init]
+  
+  - name: task_c
+    command: "sleep 1 && echo 'Task C done'"
+    dependencies: [task_a, task_b]
+  
+  - name: task_d
+    command: "sleep 1 && echo 'Task D done'"
+    dependencies: [task_b]
+  
+  - name: finalize
+    command: "echo 'Pipeline complete'"
+    dependencies: [task_c, task_d]
+Run and verify correct execution order:
+
+python3 pipeline_runner.py pipeline_complex.yaml
+Expected Outcomes
+After completing this lab, you should have:
+
+A working dependency-aware pipeline runner that:
+
+Parses YAML configuration files
+Builds dependency graphs
+Detects cycles in dependencies
+Executes jobs in topological order
+Handles job failures gracefully
+Skips dependent jobs when prerequisites fail
+Understanding of:
+
+Directed Acyclic Graphs (DAGs)
+Topological sorting algorithms
+Dependency resolution
+Failure propagation in pipelines
+Practical DevOps skills:
+
+Pipeline orchestration
+Job scheduling
+Error handling in automation
+Troubleshooting
+Issue: Jobs execute in wrong order
+
+Verify topological sort implementation
+Check dependency graph construction
+Ensure in-degree calculation is correct
+Issue: Cycle detection not working
+
+Review DFS implementation
+Check color state transitions
+Verify all nodes are visited
+Issue: Failed jobs don't skip dependents
+
+Check mark_downstream_skipped() implementation
+Verify BFS/DFS traversal of dependency graph
+Ensure status updates propagate correctly
+Issue: YAML parsing errors
+
+Validate YAML syntax
+Check indentation (use spaces, not tabs)
+Verify job names match in dependencies
+Conclusion
+You've built a dependency-aware pipeline runner that solves a core DevOps challenge: executing jobs in the correct order while handling failures gracefully. This system uses graph algorithms (topological sorting and cycle detection) to ensure reliable pipeline execution.
+
+Key accomplishments:
+
+Modeled complex job dependencies as a DAG
+Implemented topological sorting for execution order
+Built failure handling with downstream propagation
+Created a reusable pipeline orchestration tool
+This foundation is used in production CI/CD systems like Jenkins, GitLab CI, and GitHub Actions. You can extend this with parallel execution, retries, and conditional dependencies.
