@@ -117,5 +117,20 @@ class ResilientHTTPClient:
     def close(self):
         """Close the session."""
         self.session.close()
-resilient_client.py
+from circuit_breaker import CircuitBreaker
+
+class ResilientHTTPClient:
+    def __init__(self, max_retries=3, base_timeout=5, backoff_factor=2.0, use_circuit_breaker=False):
+        # ... existing code ...
+        self.circuit_breaker = CircuitBreaker() if use_circuit_breaker else None
+    
+    def get(self, url, params=None, headers=None):
+        """
+        TODO: Wrap existing get logic with circuit breaker if enabled
+        if self.circuit_breaker:
+            return self.circuit_breaker.call(self._get_with_retry, url, params, headers)
+        else:
+            return self._get_with_retry(url, params, headers)
+        """
+        pass
 
