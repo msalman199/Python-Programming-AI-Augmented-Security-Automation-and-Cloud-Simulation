@@ -152,4 +152,11 @@ def whoami():
     # TODO: Optionally test token validity
     pass
 
-
+@cli.command()
+@click.option('--token', default=None, help='API token (uses saved token if not provided)')
+def list_users(token):
+    """List all users"""
+    # TODO: If token not provided, load from storage
+    # TODO: Exit with error if no token available
+    # TODO: Proceed with API call
+    pass
