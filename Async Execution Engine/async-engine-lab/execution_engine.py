@@ -99,3 +99,45 @@ class AsyncExecutionEngine:
         # TODO: Calculate average execution time
         # TODO: Return statistics dictionary
         pass
+async def cancel_task(self, task_id: str) -> bool:
+    """
+    Cancel a pending or running task.
+    
+    Args:
+        task_id: ID of task to cancel
+        
+    Returns:
+        True if cancelled, False otherwise
+    """
+    # TODO: Check if task exists
+    # TODO: Check if task can be cancelled (not completed/failed)
+    # TODO: Update task status to FAILED with cancellation message
+    # TODO: Return success status
+    pass
+
+from dataclasses import dataclass, field
+from typing import Any
+
+@dataclass(order=True)
+class PrioritizedTask:
+    """Wrapper for tasks with priority."""
+    priority: int
+    task: Any = field(compare=False)
+    
+    def __init__(self, priority: int, task: Task):
+        self.priority = priority
+        self.task = task
+def __init__(self, max_workers: int = 5, use_priority: bool = False):
+    """
+    Initialize the execution engine.
+    
+    Args:
+        max_workers: Maximum number of concurrent tasks
+        use_priority: Enable priority-based task execution
+    """
+    # TODO: Initialize with PriorityQueue if use_priority is True
+    # TODO: Otherwise use regular Queue
+    pass
+
+
+
