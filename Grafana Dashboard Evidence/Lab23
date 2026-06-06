@@ -1,0 +1,455 @@
+Grafana Dashboard Evidence
+Prerequisites
+Basic Linux command-line knowledge
+Understanding of system metrics (CPU, memory, disk)
+Familiarity with web browsers
+Basic knowledge of monitoring concepts
+Learning Objectives
+By completing this lab, you will:
+
+Install and configure Grafana on a Linux system
+Set up Prometheus as a data source
+Create operational dashboards with key metrics
+Capture and document dashboard evidence
+Understand visualization best practices
+Environment Setup
+You will use the Al Nafi bare-metal Linux cloud machine provided via the "Start Lab" button. All tools will be installed during this lab on a single machine.
+
+Required Tools:
+
+Grafana (latest stable version)
+Prometheus (for metrics collection)
+Node Exporter (for system metrics)
+Task 1: Install and Configure Monitoring Stack
+Step 1.1: Install Prometheus
+# Download Prometheus
+cd /tmp
+wget https://github.com/prometheus/prometheus/releases/download/v2.47.0/prometheus-2.47.0.linux-amd64.tar.gz
+
+# Extract and move to /opt
+tar xvfz prometheus-2.47.0.linux-amd64.tar.gz
+sudo mv prometheus-2.47.0.linux-amd64 /opt/prometheus
+Step 1.2: Configure Prometheus
+Create a basic configuration file:
+
+sudo tee /opt/prometheus/prometheus.yml > /dev/null <<EOF
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+  
+  - job_name: 'node'
+    static_configs:
+      - targets: ['localhost:9100']
+EOF
+Step 1.3: Install Node Exporter
+# Download Node Exporter
+cd /tmp
+wget https://github.com/prometheus/node_exporter/releases/download/v1.6.1/node_exporter-1.6.1.linux-amd64.tar.gz
+
+# Extract and move
+tar xvfz node_exporter-1.6.1.linux-amd64.tar.gz
+sudo mv node_exporter-1.6.1.linux-amd64 /opt/node_exporter
+Step 1.4: Create Systemd Services
+Node Exporter Service:
+
+sudo tee /etc/systemd/system/node_exporter.service > /dev/null <<EOF
+[Unit]
+Description=Node Exporter
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/node_exporter/node_exporter
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+Prometheus Service:
+
+sudo tee /etc/systemd/system/prometheus.service > /dev/null <<EOF
+[Unit]
+Description=Prometheus
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/prometheus/prometheus --config.file=/opt/prometheus/prometheus.yml --storage.tsdb.path=/opt/prometheus/data
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+Step 1.5: Start Services
+# Reload systemd and start services
+sudo systemctl daemon-reload
+sudo systemctl start node_exporter
+sudo systemctl start prometheus
+sudo systemctl enable node_exporter
+sudo systemctl enable prometheus
+
+# Verify services are running
+sudo systemctl status node_exporter --no-pager
+sudo systemctl status prometheus --no-pager
+Step 1.6: Install Grafana
+# Install dependencies
+sudo apt-get update
+sudo apt-get install -y software-properties-common wget
+
+# Add Grafana repository
+wget -q -O - https://packages.grafana.com/gpg.key | sudo apt-key add -
+echo "deb https://packages.grafana.com/oss/deb stable main" | sudo tee /etc/apt/sources.list.d/grafana.list
+
+# Install Grafana
+sudo apt-get update
+sudo apt-get install -y grafana
+
+# Start Grafana
+sudo systemctl start grafana-server
+sudo systemctl enable grafana-server
+Step 1.7: Verify Installation
+# Check all services
+echo "=== Service Status ==="
+sudo systemctl is-active node_exporter
+sudo systemctl is-active prometheus
+sudo systemctl is-active grafana-server
+
+# Check ports
+echo "=== Port Status ==="
+sudo netstat -tlnp | grep -E '9090|9100|3000'
+Expected Output:
+
+All services should show "active"
+Ports 9090 (Prometheus), 9100 (Node Exporter), and 3000 (Grafana) should be listening
+Task 2: Build Operational Dashboards
+Step 2.1: Access Grafana
+Open your web browser and navigate to:
+
+http://localhost:3000
+Default Credentials:
+
+Username: admin
+Password: admin
+You will be prompted to change the password on first login.
+
+Step 2.2: Add Prometheus Data Source
+Click on the gear icon (Configuration) in the left sidebar
+Select "Data Sources"
+Click "Add data source"
+Select "Prometheus"
+Configure the following:
+Name: Prometheus
+URL: http://localhost:9090
+Leave other settings as default
+Click "Save & Test" - you should see "Data source is working"
+Step 2.3: Create System Performance Dashboard
+Click the "+" icon in the left sidebar
+Select "Dashboard"
+Click "Add new panel"
+Panel 1: CPU Usage
+
+Configure the panel:
+
+Title: CPU Usage (%)
+Query:
+100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+Visualization: Time series
+Unit: Percent (0-100)
+Legend: {{instance}}
+Click "Apply" to save the panel.
+
+Step 2.4: Add Memory Usage Panel
+Click "Add panel" at the top
+Select "Add new panel"
+Panel 2: Memory Usage
+
+Configure:
+
+Title: Memory Usage
+Query A (Used Memory):
+node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes
+Query B (Total Memory):
+node_memory_MemTotal_bytes
+Visualization: Time series
+Unit: Bytes (IEC)
+Legend: Used Memory and Total Memory
+Click "Apply".
+
+Step 2.5: Add Disk Usage Panel
+Click "Add panel"
+Select "Add new panel"
+Panel 3: Disk Usage
+
+Configure:
+
+Title: Disk Usage by Mount Point
+Query:
+100 - ((node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"}) * 100)
+Visualization: Bar gauge
+Unit: Percent (0-100)
+Legend: {{mountpoint}}
+Click "Apply".
+
+Step 2.6: Add Network Traffic Panel
+Click "Add panel"
+Select "Add new panel"
+Panel 4: Network Traffic
+
+Configure:
+
+Title: Network Traffic
+Query A (Received):
+rate(node_network_receive_bytes_total{device!="lo"}[5m])
+Query B (Transmitted):
+rate(node_network_transmit_bytes_total{device!="lo"}[5m])
+Visualization: Time series
+Unit: Bytes/sec (IEC)
+Legend: RX - {{device}} and TX - {{device}}
+Click "Apply".
+
+Step 2.7: Organize Dashboard Layout
+Arrange panels in a 2x2 grid by dragging them
+Resize panels for better visibility
+Click the disk icon (Save dashboard) at the top
+Dashboard Name: System Performance Overview
+Click "Save"
+Step 2.8: Create Application Metrics Dashboard
+Click the "+" icon and select "Dashboard"
+Click "Add new panel"
+Panel 5: Prometheus Targets Status
+
+Configure:
+
+Title: Monitoring Targets Status
+Query:
+up
+Visualization: Stat
+Value mappings:
+0 = Down (Red)
+1 = Up (Green)
+Legend: {{job}}
+Click "Apply".
+
+Step 2.9: Add Query Rate Panel
+Click "Add panel"
+Panel 6: Prometheus Query Rate
+
+Configure:
+
+Title: Prometheus Query Rate
+Query:
+rate(prometheus_http_requests_total[5m])
+Visualization: Time series
+Unit: requests/sec
+Legend: {{handler}}
+Click "Apply" and save the dashboard as Monitoring Health.
+
+Step 2.10: Configure Dashboard Settings
+For each dashboard:
+
+Click the gear icon (Dashboard settings) at the top
+Set Time range: Last 15 minutes
+Set Refresh interval: 30s
+Click "Save dashboard"
+Task 3: Capture Dashboard Evidence
+Step 3.1: Prepare Screenshot Directory
+# Create directory for screenshots
+mkdir -p ~/grafana-evidence
+cd ~/grafana-evidence
+Step 3.2: Generate System Load
+Open a new terminal and generate some activity:
+
+# Generate CPU load
+stress-ng --cpu 2 --timeout 60s &
+
+# Generate disk I/O
+dd if=/dev/zero of=/tmp/testfile bs=1M count=1024
+
+# Monitor in real-time
+watch -n 1 'uptime; free -h'
+If stress-ng is not installed:
+
+sudo apt-get install -y stress-ng
+Step 3.3: Capture Dashboard Screenshots
+Using Firefox (if available):
+
+# Install Firefox if needed
+sudo apt-get install -y firefox
+
+# Take screenshot using Firefox
+firefox --screenshot ~/grafana-evidence/system-performance.png http://localhost:3000/d/YOUR_DASHBOARD_UID
+Alternative: Using command-line tool:
+
+# Install screenshot tool
+sudo apt-get install -y scrot
+
+# Take full screen screenshot
+sleep 5 && scrot ~/grafana-evidence/dashboard-fullscreen.png
+Manual Screenshot Instructions:
+
+Open Grafana dashboard in browser
+Click the share icon (arrow) at the top of the dashboard
+Select "Link" tab
+Enable "Lock time range"
+Copy the link
+Use browser's screenshot feature (F12 > Ctrl+Shift+P > "Screenshot")
+Save to ~/grafana-evidence/
+Step 3.4: Document Dashboard Configuration
+Create evidence documentation:
+
+tee ~/grafana-evidence/dashboard-evidence.md > /dev/null <<EOF
+# Grafana Dashboard Evidence Report
+
+## Lab Information
+- **Date:** $(date)
+- **System:** $(hostname)
+- **Grafana Version:** $(grafana-server -v | head -n1)
+
+## Dashboards Created
+
+### 1. System Performance Overview
+- **Panels:** 4
+- **Metrics Tracked:**
+  - CPU Usage (%)
+  - Memory Usage (Bytes)
+  - Disk Usage (%)
+  - Network Traffic (Bytes/sec)
+
+### 2. Monitoring Health
+- **Panels:** 2
+- **Metrics Tracked:**
+  - Target Status
+  - Query Rate
+
+## Data Sources
+- **Type:** Prometheus
+- **URL:** http://localhost:9090
+- **Status:** Connected
+
+## Screenshots
+- system-performance.png
+- monitoring-health.png
+- dashboard-fullscreen.png
+
+## Verification Commands
+EOF
+Step 3.5: Export Dashboard JSON
+# Get dashboard UID from Grafana UI or API
+# Export dashboard configuration
+curl -u admin:admin http://localhost:3000/api/dashboards/uid/YOUR_DASHBOARD_UID > ~/grafana-evidence/system-performance-dashboard.json
+
+# Alternative: Export all dashboards
+curl -u admin:admin http://localhost:3000/api/search?type=dash-db | \
+  jq -r '.[] | .uid' | \
+  while read uid; do
+    curl -u admin:admin http://localhost:3000/api/dashboards/uid/$uid > ~/grafana-evidence/dashboard-$uid.json
+  done
+Step 3.6: Create Evidence Summary
+# Generate metrics summary
+tee ~/grafana-evidence/metrics-summary.txt > /dev/null <<EOF
+=== Grafana Dashboard Evidence Summary ===
+
+Timestamp: $(date)
+
+Services Status:
+$(sudo systemctl is-active grafana-server prometheus node_exporter)
+
+Active Metrics:
+$(curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets | length') targets
+
+Dashboard Count:
+$(curl -s -u admin:admin http://localhost:3000/api/search?type=dash-db | jq '. | length') dashboards
+
+Sample Metrics:
+- CPU: $(curl -s 'http://localhost:9090/api/v1/query?query=100-(avg(irate(node_cpu_seconds_total{mode="idle"}[5m]))*100)' | jq -r '.data.result[0].value[1]')%
+- Memory Used: $(free -h | awk '/^Mem:/ {print $3}')
+- Disk Usage: $(df -h / | awk 'NR==2 {print $5}')
+
+EOF
+
+cat ~/grafana-evidence/metrics-summary.txt
+Step 3.7: Package Evidence
+# Create archive of all evidence
+cd ~
+tar -czf grafana-lab-evidence.tar.gz grafana-evidence/
+
+# Display archive contents
+echo "=== Evidence Package Contents ==="
+tar -tzf grafana-lab-evidence.tar.gz
+
+# Show file sizes
+ls -lh grafana-lab-evidence.tar.gz
+Verification
+Verify Grafana Installation
+# Check Grafana version
+grafana-server -v
+
+# Verify service status
+sudo systemctl status grafana-server --no-pager | grep Active
+Expected: Active: active (running)
+
+Verify Data Collection
+# Check Prometheus targets
+curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job: .labels.job, health: .health}'
+
+# Verify metrics are being collected
+curl -s 'http://localhost:9090/api/v1/query?query=up' | jq '.data.result'
+Expected: All targets should show "health": "up"
+
+Verify Dashboards
+# List all dashboards
+curl -s -u admin:admin http://localhost:3000/api/search?type=dash-db | jq '.[] | {title: .title, uid: .uid}'
+
+# Check dashboard count
+curl -s -u admin:admin http://localhost:3000/api/search?type=dash-db | jq '. | length'
+Expected: At least 2 dashboards created
+
+Verify Evidence Files
+# Check evidence directory
+ls -lh ~/grafana-evidence/
+
+# Verify archive
+tar -tzf ~/grafana-lab-evidence.tar.gz | wc -l
+Expected: Multiple files including markdown documentation and JSON exports
+
+Troubleshooting
+Issue: Grafana won't start
+
+# Check logs
+sudo journalctl -u grafana-server -n 50
+
+# Verify port availability
+sudo netstat -tlnp | grep 3000
+Issue: No data in dashboards
+
+# Verify Prometheus is scraping
+curl http://localhost:9090/api/v1/targets
+
+# Check Node Exporter metrics
+curl http://localhost:9100/metrics | head -n 20
+Issue: Cannot connect to data source
+
+# Test Prometheus connectivity
+curl http://localhost:9090/api/v1/query?query=up
+
+# Restart services
+sudo systemctl restart prometheus grafana-server
+Issue: Screenshots not capturing
+
+# Alternative: Use Grafana's built-in export
+# Navigate to dashboard > Share > Export > Save to file
+Conclusion
+You have successfully:
+
+Installed and configured a complete monitoring stack (Grafana, Prometheus, Node Exporter)
+Created operational dashboards visualizing CPU, memory, disk, and network metrics
+Configured multiple panel types including time series, bar gauges, and stats
+Captured and documented dashboard evidence with screenshots and exports
+Generated a comprehensive evidence package for audit or review purposes
+Real-World Significance: DevOps engineers use Grafana dashboards to monitor production systems, identify performance bottlenecks, and provide evidence of system health to stakeholders. The ability to create, customize, and document dashboards is essential for maintaining reliable infrastructure and meeting compliance requirements.
+
+Evidence Package Location: ~/grafana-lab-evidence.tar.gz
