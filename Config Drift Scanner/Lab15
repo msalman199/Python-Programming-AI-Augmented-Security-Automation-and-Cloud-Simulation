@@ -1,0 +1,513 @@
+ Configuration Drift Scanner
+Prerequisites
+Basic Linux command-line skills
+Understanding of file operations and text processing
+Familiarity with JSON/YAML formats
+Basic knowledge of system configuration files
+Experience with shell scripting fundamentals
+Learning Objectives
+By completing this lab, you will:
+
+Understand configuration drift and its impact on system reliability
+Implement baseline configuration capture mechanisms
+Build a drift detection system using open-source tools
+Generate drift reports for DevOps workflows
+Apply configuration management best practices
+Environment Setup
+You will use the bare-metal Linux machine provided through the "Start Lab" button. All tools will be installed during this lab.
+
+Install Required Tools
+# Update package manager
+sudo apt update
+
+# Install required packages
+sudo apt install -y python3 python3-pip jq git
+
+# Install Python libraries
+pip3 install pyyaml deepdiff
+Verify Installation
+python3 --version
+jq --version
+Task 1: Create Baseline Configuration Capture System
+Step 1: Set Up Project Structure
+# Create project directory
+mkdir -p ~/config-drift-scanner/{baselines,current,reports,scripts}
+cd ~/config-drift-scanner
+Step 2: Create Configuration Baseline Script
+Create a script to capture system configurations as baseline:
+
+nano scripts/capture_baseline.sh
+Add the following starter template:
+
+#!/bin/bash
+
+# Configuration Baseline Capture Script
+# TODO: Complete the implementation
+
+BASELINE_DIR="$HOME/config-drift-scanner/baselines"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+# Function to capture system configurations
+capture_system_config() {
+    # TODO: Capture /etc/hosts
+    # TODO: Capture /etc/ssh/sshd_config (if readable)
+    # TODO: Capture installed packages list
+    # TODO: Capture running services
+    # TODO: Capture network configuration
+    
+    echo "Baseline captured at: $BASELINE_DIR"
+}
+
+# TODO: Call the function
+Complete the script with these implementations:
+
+#!/bin/bash
+
+BASELINE_DIR="$HOME/config-drift-scanner/baselines"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+mkdir -p "$BASELINE_DIR"
+
+capture_system_config() {
+    echo "Capturing baseline configuration..."
+    
+    # Capture /etc/hosts
+    cp /etc/hosts "$BASELINE_DIR/hosts.baseline"
+    
+    # Capture package list
+    dpkg -l > "$BASELINE_DIR/packages.baseline"
+    
+    # Capture running services
+    systemctl list-units --type=service --state=running > "$BASELINE_DIR/services.baseline"
+    
+    # Capture network interfaces
+    ip addr show > "$BASELINE_DIR/network.baseline"
+    
+    # Capture environment variables (user-level)
+    env | sort > "$BASELINE_DIR/environment.baseline"
+    
+    echo "Baseline captured successfully at: $BASELINE_DIR"
+}
+
+capture_system_config
+Make the script executable and run it:
+
+chmod +x scripts/capture_baseline.sh
+./scripts/capture_baseline.sh
+Step 3: Create Application Configuration Baseline
+Create a sample application configuration to monitor:
+
+mkdir -p ~/config-drift-scanner/app-configs
+nano ~/config-drift-scanner/app-configs/app-config.yaml
+Add sample configuration:
+
+application:
+  name: "WebApp"
+  version: "1.0.0"
+  port: 8080
+  environment: "production"
+  
+database:
+  host: "localhost"
+  port: 5432
+  name: "appdb"
+  max_connections: 100
+  
+security:
+  ssl_enabled: true
+  token_expiry: 3600
+  allowed_origins:
+    - "https://example.com"
+    - "https://app.example.com"
+Copy to baseline:
+
+cp ~/config-drift-scanner/app-configs/app-config.yaml ~/config-drift-scanner/baselines/app-config.baseline.yaml
+Task 2: Build Configuration Drift Detection System
+Step 1: Create Python Drift Scanner
+Create the main drift detection script:
+
+nano scripts/drift_scanner.py
+Add the following template:
+
+#!/usr/bin/env python3
+
+import os
+import json
+import yaml
+import hashlib
+from datetime import datetime
+from deepdiff import DeepDiff
+from pathlib import Path
+
+class ConfigDriftScanner:
+    def __init__(self, baseline_dir, current_dir, report_dir):
+        """
+        Initialize the Configuration Drift Scanner
+        
+        Args:
+            baseline_dir: Directory containing baseline configurations
+            current_dir: Directory containing current configurations
+            report_dir: Directory to store drift reports
+        """
+        self.baseline_dir = Path(baseline_dir)
+        self.current_dir = Path(current_dir)
+        self.report_dir = Path(report_dir)
+        self.drift_results = []
+        
+    def calculate_file_hash(self, filepath):
+        """
+        Calculate SHA256 hash of a file
+        
+        Args:
+            filepath: Path to the file
+            
+        Returns:
+            Hash string or None if file doesn't exist
+        """
+        # TODO: Implement hash calculation
+        # TODO: Handle file read errors
+        pass
+    
+    def compare_text_files(self, baseline_file, current_file):
+        """
+        Compare two text files line by line
+        
+        Args:
+            baseline_file: Path to baseline file
+            current_file: Path to current file
+            
+        Returns:
+            Dictionary with comparison results
+        """
+        # TODO: Read both files
+        # TODO: Compare line by line
+        # TODO: Return differences
+        pass
+    
+    def compare_yaml_configs(self, baseline_file, current_file):
+        """
+        Compare YAML configuration files
+        
+        Args:
+            baseline_file: Path to baseline YAML
+            current_file: Path to current YAML
+            
+        Returns:
+            Dictionary with deep comparison results
+        """
+        # TODO: Load YAML files
+        # TODO: Use DeepDiff for comparison
+        # TODO: Return structured differences
+        pass
+    
+    def scan_for_drift(self):
+        """
+        Scan all configurations for drift
+        
+        Returns:
+            List of drift findings
+        """
+        # TODO: Iterate through baseline files
+        # TODO: Compare with current files
+        # TODO: Collect all drift findings
+        pass
+    
+    def generate_report(self, output_format='json'):
+        """
+        Generate drift report
+        
+        Args:
+            output_format: Format for report (json or text)
+            
+        Returns:
+            Path to generated report
+        """
+        # TODO: Create report structure
+        # TODO: Format findings
+        # TODO: Save to report directory
+        pass
+
+# TODO: Implement main execution logic
+if __name__ == "__main__":
+    pass
+Step 2: Complete the Drift Scanner Implementation
+Replace the script with the completed version:
+
+#!/usr/bin/env python3
+
+import os
+import json
+import yaml
+import hashlib
+from datetime import datetime
+from deepdiff import DeepDiff
+from pathlib import Path
+
+class ConfigDriftScanner:
+    def __init__(self, baseline_dir, current_dir, report_dir):
+        self.baseline_dir = Path(baseline_dir)
+        self.current_dir = Path(current_dir)
+        self.report_dir = Path(report_dir)
+        self.drift_results = []
+        self.report_dir.mkdir(parents=True, exist_ok=True)
+        
+    def calculate_file_hash(self, filepath):
+        try:
+            with open(filepath, 'rb') as f:
+                return hashlib.sha256(f.read()).hexdigest()
+        except Exception as e:
+            return None
+    
+    def compare_text_files(self, baseline_file, current_file):
+        result = {
+            'file': baseline_file.name,
+            'drift_detected': False,
+            'differences': []
+        }
+        
+        try:
+            with open(baseline_file, 'r') as f:
+                baseline_lines = f.readlines()
+            with open(current_file, 'r') as f:
+                current_lines = f.readlines()
+            
+            baseline_hash = self.calculate_file_hash(baseline_file)
+            current_hash = self.calculate_file_hash(current_file)
+            
+            if baseline_hash != current_hash:
+                result['drift_detected'] = True
+                result['baseline_hash'] = baseline_hash
+                result['current_hash'] = current_hash
+                
+                # Find line differences
+                for i, (b_line, c_line) in enumerate(zip(baseline_lines, current_lines)):
+                    if b_line != c_line:
+                        result['differences'].append({
+                            'line': i + 1,
+                            'baseline': b_line.strip(),
+                            'current': c_line.strip()
+                        })
+        except Exception as e:
+            result['error'] = str(e)
+        
+        return result
+    
+    def compare_yaml_configs(self, baseline_file, current_file):
+        result = {
+            'file': baseline_file.name,
+            'drift_detected': False,
+            'differences': {}
+        }
+        
+        try:
+            with open(baseline_file, 'r') as f:
+                baseline_data = yaml.safe_load(f)
+            with open(current_file, 'r') as f:
+                current_data = yaml.safe_load(f)
+            
+            diff = DeepDiff(baseline_data, current_data, ignore_order=True)
+            
+            if diff:
+                result['drift_detected'] = True
+                result['differences'] = json.loads(diff.to_json())
+        except Exception as e:
+            result['error'] = str(e)
+        
+        return result
+    
+    def scan_for_drift(self):
+        print("Starting configuration drift scan...")
+        
+        # Scan text-based configurations
+        text_configs = ['hosts.baseline', 'packages.baseline', 'services.baseline']
+        
+        for config in text_configs:
+            baseline_path = self.baseline_dir / config
+            current_path = self.current_dir / config.replace('.baseline', '.current')
+            
+            if baseline_path.exists() and current_path.exists():
+                result = self.compare_text_files(baseline_path, current_path)
+                self.drift_results.append(result)
+        
+        # Scan YAML configurations
+        yaml_baseline = self.baseline_dir / 'app-config.baseline.yaml'
+        yaml_current = self.current_dir / 'app-config.current.yaml'
+        
+        if yaml_baseline.exists() and yaml_current.exists():
+            result = self.compare_yaml_configs(yaml_baseline, yaml_current)
+            self.drift_results.append(result)
+        
+        return self.drift_results
+    
+    def generate_report(self, output_format='json'):
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        
+        report_data = {
+            'scan_timestamp': timestamp,
+            'total_configs_scanned': len(self.drift_results),
+            'drifts_detected': sum(1 for r in self.drift_results if r.get('drift_detected')),
+            'findings': self.drift_results
+        }
+        
+        if output_format == 'json':
+            report_file = self.report_dir / f'drift_report_{timestamp}.json'
+            with open(report_file, 'w') as f:
+                json.dump(report_data, f, indent=2)
+        else:
+            report_file = self.report_dir / f'drift_report_{timestamp}.txt'
+            with open(report_file, 'w') as f:
+                f.write(f"Configuration Drift Report\n")
+                f.write(f"Generated: {timestamp}\n")
+                f.write(f"{'='*60}\n\n")
+                
+                for finding in self.drift_results:
+                    f.write(f"File: {finding['file']}\n")
+                    f.write(f"Drift Detected: {finding['drift_detected']}\n")
+                    if finding.get('drift_detected'):
+                        f.write(f"Differences: {json.dumps(finding.get('differences', {}), indent=2)}\n")
+                    f.write(f"{'-'*60}\n")
+        
+        print(f"Report generated: {report_file}")
+        return report_file
+
+if __name__ == "__main__":
+    scanner = ConfigDriftScanner(
+        baseline_dir=os.path.expanduser('~/config-drift-scanner/baselines'),
+        current_dir=os.path.expanduser('~/config-drift-scanner/current'),
+        report_dir=os.path.expanduser('~/config-drift-scanner/reports')
+    )
+    
+    scanner.scan_for_drift()
+    scanner.generate_report(output_format='json')
+    scanner.generate_report(output_format='text')
+Make it executable:
+
+chmod +x scripts/drift_scanner.py
+Step 3: Create Current Configuration Capture Script
+nano scripts/capture_current.sh
+#!/bin/bash
+
+CURRENT_DIR="$HOME/config-drift-scanner/current"
+
+mkdir -p "$CURRENT_DIR"
+
+echo "Capturing current configuration..."
+
+# Capture current state
+cp /etc/hosts "$CURRENT_DIR/hosts.current"
+dpkg -l > "$CURRENT_DIR/packages.current"
+systemctl list-units --type=service --state=running > "$CURRENT_DIR/services.current"
+ip addr show > "$CURRENT_DIR/network.current"
+
+# Copy current app config
+cp ~/config-drift-scanner/app-configs/app-config.yaml "$CURRENT_DIR/app-config.current.yaml"
+
+echo "Current configuration captured at: $CURRENT_DIR"
+chmod +x scripts/capture_current.sh
+Step 4: Simulate Configuration Drift
+Modify the application configuration to create drift:
+
+nano ~/config-drift-scanner/app-configs/app-config.yaml
+Change some values:
+
+application:
+  name: "WebApp"
+  version: "1.1.0"  # Changed
+  port: 8080
+  environment: "staging"  # Changed
+  
+database:
+  host: "localhost"
+  port: 5432
+  name: "appdb"
+  max_connections: 150  # Changed
+  
+security:
+  ssl_enabled: true
+  token_expiry: 7200  # Changed
+  allowed_origins:
+    - "https://example.com"
+    - "https://app.example.com"
+    - "https://new.example.com"  # Added
+Capture the current state:
+
+./scripts/capture_current.sh
+Step 5: Run Drift Detection
+Execute the drift scanner:
+
+python3 scripts/drift_scanner.py
+View the JSON report:
+
+cat reports/drift_report_*.json | jq '.'
+View the text report:
+
+cat reports/drift_report_*.txt
+Verification
+Verify Baseline Capture
+# Check baseline files exist
+ls -lh ~/config-drift-scanner/baselines/
+
+# Verify baseline content
+head -5 ~/config-drift-scanner/baselines/hosts.baseline
+Verify Drift Detection
+# Check drift reports were generated
+ls -lh ~/config-drift-scanner/reports/
+
+# Verify drift was detected in YAML config
+cat reports/drift_report_*.json | jq '.findings[] | select(.file == "app-config.baseline.yaml")'
+Expected output should show:
+
+drift_detected: true
+Differences in version, environment, max_connections, token_expiry
+New entry in allowed_origins
+Test Automated Scanning
+Create a simple automation script:
+
+nano scripts/automated_scan.sh
+#!/bin/bash
+
+echo "Running automated drift scan..."
+./scripts/capture_current.sh
+python3 scripts/drift_scanner.py
+
+# Check if drift detected
+DRIFT_COUNT=$(cat reports/drift_report_*.json | tail -1 | jq '.drifts_detected')
+
+if [ "$DRIFT_COUNT" -gt 0 ]; then
+    echo "WARNING: $DRIFT_COUNT configuration drift(s) detected!"
+    exit 1
+else
+    echo "No configuration drift detected."
+    exit 0
+fi
+chmod +x scripts/automated_scan.sh
+./scripts/automated_scan.sh
+Troubleshooting Tips
+Issue: Permission denied when reading system files
+
+Solution: Some system files require sudo. Modify scripts to use sudo where needed or focus on user-accessible configs
+Issue: DeepDiff not found
+
+Solution: Ensure pip3 installation completed: pip3 install --user deepdiff
+Issue: YAML parsing errors
+
+Solution: Validate YAML syntax using: python3 -c "import yaml; yaml.safe_load(open('file.yaml'))"
+Issue: No drift detected when expected
+
+Solution: Verify current capture ran after modifications: ls -lt current/
+Conclusion
+You have successfully built a configuration drift scanner that:
+
+Captures baseline system and application configurations
+Detects changes between baseline and current states
+Generates detailed drift reports in multiple formats
+Provides automated scanning capabilities
+This tool is essential for DevOps engineers to maintain configuration consistency, detect unauthorized changes, and ensure compliance. Configuration drift detection helps prevent "configuration creep" that can lead to system instability, security vulnerabilities, and deployment failures.
+
+Key Takeaways:
+
+Configuration drift is a common cause of production issues
+Automated drift detection enables proactive remediation
+Baseline comparisons provide audit trails for compliance
+Integration with CI/CD pipelines ensures continuous monitoring
+Next Steps: Integrate this scanner with monitoring systems, add alerting mechanisms, or extend it to support additional configuration formats like JSON, INI, or TOML files.
