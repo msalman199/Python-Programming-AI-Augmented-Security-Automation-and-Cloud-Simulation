@@ -1,0 +1,627 @@
+ Build and Version Artifacts
+Prerequisites
+Basic Linux command line knowledge
+Understanding of Git fundamentals (commits, branches, tags)
+Familiarity with software build processes
+Basic scripting knowledge (Bash)
+Understanding of semantic versioning concepts
+Learning Objectives
+By completing this lab, you will:
+
+Implement semantic versioning for software artifacts
+Create and manage Git tags for release tracking
+Generate and store build metadata
+Automate version management in build pipelines
+Track artifact provenance and build information
+Environment Setup
+You will work on a single Linux machine provided by Al Nafi. Click the "Start Lab" button to access your environment.
+
+Install Required Tools
+# Update package manager
+sudo apt update
+
+# Install Git
+sudo apt install -y git
+
+# Install jq for JSON processing
+sudo apt install -y jq
+
+# Install build tools
+sudo apt install -y build-essential
+
+# Verify installations
+git --version
+jq --version
+Create Lab Directory Structure
+# Create working directory
+mkdir -p ~/artifact-lab
+cd ~/artifact-lab
+
+# Initialize Git repository
+git init
+git config user.name "DevOps Student"
+git config user.email "student@example.com"
+Task 1: Implement Semantic Versioning System
+Step 1: Create Sample Application
+Create a simple application to version:
+
+# Create application directory
+mkdir -p src
+
+# Create main application file
+cat > src/app.sh << 'EOF'
+#!/bin/bash
+# Simple calculator application
+VERSION="0.0.0"
+
+calculate() {
+    echo "Calculator v${VERSION}"
+    echo "Result: $(($1 + $2))"
+}
+
+calculate "$@"
+EOF
+
+chmod +x src/app.sh
+Step 2: Create Version Management Script
+Create a script to manage semantic versions:
+
+cat > version-manager.sh << 'EOF'
+#!/bin/bash
+
+VERSION_FILE="VERSION"
+CHANGELOG_FILE="CHANGELOG.md"
+
+# Initialize version file if not exists
+init_version() {
+    if [ ! -f "$VERSION_FILE" ]; then
+        echo "0.1.0" > "$VERSION_FILE"
+        echo "Version initialized to 0.1.0"
+    fi
+}
+
+# Read current version
+get_version() {
+    # TODO: Read version from VERSION file
+    # TODO: Validate version format (MAJOR.MINOR.PATCH)
+    cat "$VERSION_FILE"
+}
+
+# Bump version based on type
+bump_version() {
+    local bump_type=$1
+    local current_version=$(get_version)
+    
+    # TODO: Parse MAJOR, MINOR, PATCH from current_version
+    # TODO: Increment appropriate component based on bump_type
+    # TODO: Reset lower components (e.g., MINOR bump resets PATCH to 0)
+    # TODO: Write new version to VERSION file
+    
+    IFS='.' read -r major minor patch <<< "$current_version"
+    
+    case $bump_type in
+        major)
+            major=$((major + 1))
+            minor=0
+            patch=0
+            ;;
+        minor)
+            minor=$((minor + 1))
+            patch=0
+            ;;
+        patch)
+            patch=$((patch + 1))
+            ;;
+        *)
+            echo "Invalid bump type. Use: major, minor, or patch"
+            exit 1
+            ;;
+    esac
+    
+    new_version="${major}.${minor}.${patch}"
+    echo "$new_version" > "$VERSION_FILE"
+    echo "Version bumped to $new_version"
+}
+
+# Update changelog
+update_changelog() {
+    local version=$1
+    local message=$2
+    local date=$(date +%Y-%m-%d)
+    
+    # TODO: Prepend new version entry to CHANGELOG.md
+    # TODO: Include version, date, and changes
+    
+    echo "Changelog updated for version $version"
+}
+
+# Main execution
+case $1 in
+    init)
+        init_version
+        ;;
+    get)
+        get_version
+        ;;
+    bump)
+        bump_version "$2"
+        ;;
+    changelog)
+        update_changelog "$(get_version)" "$2"
+        ;;
+    *)
+        echo "Usage: $0 {init|get|bump major|minor|patch|changelog 'message'}"
+        exit 1
+        ;;
+esac
+EOF
+
+chmod +x version-manager.sh
+Step 3: Initialize and Test Versioning
+# Initialize version
+./version-manager.sh init
+
+# Create initial commit
+git add .
+git commit -m "Initial commit: Add application and version manager"
+
+# Test version bumping
+./version-manager.sh bump patch
+./version-manager.sh bump minor
+./version-manager.sh bump major
+
+# Verify current version
+./version-manager.sh get
+Task 2: Tag Builds and Store Metadata
+Step 1: Create Build Script with Metadata Generation
+cat > build.sh << 'EOF'
+#!/bin/bash
+
+BUILD_DIR="builds"
+METADATA_DIR="metadata"
+VERSION=$(cat VERSION)
+BUILD_NUMBER=${BUILD_NUMBER:-$(date +%s)}
+BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+GIT_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+
+# Create directories
+mkdir -p "$BUILD_DIR" "$METADATA_DIR"
+
+# Build artifact
+build_artifact() {
+    local artifact_name="app-${VERSION}-${BUILD_NUMBER}.tar.gz"
+    local artifact_path="${BUILD_DIR}/${artifact_name}"
+    
+    echo "Building artifact: $artifact_name"
+    
+    # TODO: Package application files into tarball
+    # TODO: Include version information in the package
+    
+    tar -czf "$artifact_path" src/ VERSION
+    
+    echo "Artifact created: $artifact_path"
+    echo "$artifact_path"
+}
+
+# Generate build metadata
+generate_metadata() {
+    local artifact_path=$1
+    local artifact_name=$(basename "$artifact_path")
+    local checksum=$(sha256sum "$artifact_path" | awk '{print $1}')
+    local size=$(stat -f%z "$artifact_path" 2>/dev/null || stat -c%s "$artifact_path")
+    
+    # TODO: Create comprehensive metadata JSON
+    # TODO: Include version, build info, git info, checksums
+    # TODO: Add build environment details
+    
+    local metadata_file="${METADATA_DIR}/${artifact_name}.json"
+    
+    cat > "$metadata_file" << METADATA
+{
+  "artifact": {
+    "name": "$artifact_name",
+    "version": "$VERSION",
+    "path": "$artifact_path",
+    "size": $size,
+    "checksum": {
+      "algorithm": "sha256",
+      "value": "$checksum"
+    }
+  },
+  "build": {
+    "number": "$BUILD_NUMBER",
+    "date": "$BUILD_DATE",
+    "builder": "$(whoami)@$(hostname)"
+  },
+  "source": {
+    "commit": "$GIT_COMMIT",
+    "branch": "$GIT_BRANCH",
+    "repository": "$(git config --get remote.origin.url 2>/dev/null || echo 'local')"
+  }
+}
+METADATA
+    
+    echo "Metadata generated: $metadata_file"
+    echo "$metadata_file"
+}
+
+# Create Git tag
+create_git_tag() {
+    local version=$1
+    local tag_name="v${version}"
+    
+    # TODO: Create annotated Git tag
+    # TODO: Include build information in tag message
+    
+    if git rev-parse "$tag_name" >/dev/null 2>&1; then
+        echo "Tag $tag_name already exists"
+        return 1
+    fi
+    
+    git tag -a "$tag_name" -m "Release version $version
+Build: $BUILD_NUMBER
+Date: $BUILD_DATE
+Commit: $GIT_COMMIT"
+    
+    echo "Git tag created: $tag_name"
+}
+
+# Main build process
+main() {
+    echo "=== Starting Build Process ==="
+    echo "Version: $VERSION"
+    echo "Build Number: $BUILD_NUMBER"
+    echo ""
+    
+    # Build artifact
+    artifact_path=$(build_artifact)
+    
+    # Generate metadata
+    metadata_file=$(generate_metadata "$artifact_path")
+    
+    # Create Git tag
+    create_git_tag "$VERSION"
+    
+    echo ""
+    echo "=== Build Complete ==="
+    echo "Artifact: $artifact_path"
+    echo "Metadata: $metadata_file"
+    
+    # Display metadata
+    echo ""
+    echo "=== Build Metadata ==="
+    cat "$metadata_file" | jq '.'
+}
+
+main
+EOF
+
+chmod +x build.sh
+Step 2: Create Release Workflow Script
+cat > release.sh << 'EOF'
+#!/bin/bash
+
+# Release workflow automation
+release() {
+    local release_type=$1
+    local release_notes=$2
+    
+    if [ -z "$release_type" ]; then
+        echo "Usage: $0 {major|minor|patch} 'release notes'"
+        exit 1
+    fi
+    
+    echo "=== Starting Release Process ==="
+    
+    # TODO: Verify working directory is clean
+    # TODO: Bump version
+    # TODO: Update changelog
+    # TODO: Commit version changes
+    # TODO: Run build
+    # TODO: Create and push tag
+    
+    # Check for uncommitted changes
+    if ! git diff-index --quiet HEAD --; then
+        echo "Error: Working directory has uncommitted changes"
+        exit 1
+    fi
+    
+    # Bump version
+    ./version-manager.sh bump "$release_type"
+    new_version=$(./version-manager.sh get)
+    
+    # Update changelog
+    if [ -n "$release_notes" ]; then
+        echo "## Version $new_version - $(date +%Y-%m-%d)" >> CHANGELOG.md
+        echo "$release_notes" >> CHANGELOG.md
+        echo "" >> CHANGELOG.md
+    fi
+    
+    # Commit version bump
+    git add VERSION CHANGELOG.md
+    git commit -m "Bump version to $new_version"
+    
+    # Build artifact
+    ./build.sh
+    
+    # Add build artifacts to git (optional, usually stored elsewhere)
+    git add builds/ metadata/
+    git commit -m "Add build artifacts for version $new_version"
+    
+    echo ""
+    echo "=== Release Complete ==="
+    echo "Version: $new_version"
+    echo "Tag: v$new_version"
+    echo ""
+    echo "To push to remote: git push && git push --tags"
+}
+
+release "$@"
+EOF
+
+chmod +x release.sh
+Step 3: Execute Build and Tagging Process
+# Perform a patch release
+./release.sh patch "Bug fixes and improvements"
+
+# View created tags
+git tag -l
+
+# View tag details
+git show v$(cat VERSION)
+
+# List build artifacts
+ls -lh builds/
+
+# View metadata
+cat metadata/*.json | jq '.'
+Step 4: Create Artifact Query Tool
+cat > query-artifacts.sh << 'EOF'
+#!/bin/bash
+
+METADATA_DIR="metadata"
+
+# List all artifacts
+list_artifacts() {
+    echo "=== Available Artifacts ==="
+    for metadata in "$METADATA_DIR"/*.json; do
+        if [ -f "$metadata" ]; then
+            version=$(jq -r '.artifact.version' "$metadata")
+            name=$(jq -r '.artifact.name' "$metadata")
+            date=$(jq -r '.build.date' "$metadata")
+            echo "Version: $version | Artifact: $name | Built: $date"
+        fi
+    done
+}
+
+# Get artifact details
+get_artifact_info() {
+    local version=$1
+    
+    # TODO: Search for artifact by version
+    # TODO: Display comprehensive information
+    
+    for metadata in "$METADATA_DIR"/*.json; do
+        if [ -f "$metadata" ]; then
+            artifact_version=$(jq -r '.artifact.version' "$metadata")
+            if [ "$artifact_version" = "$version" ]; then
+                echo "=== Artifact Information ==="
+                cat "$metadata" | jq '.'
+                return 0
+            fi
+        fi
+    done
+    
+    echo "No artifact found for version: $version"
+    return 1
+}
+
+# Verify artifact integrity
+verify_artifact() {
+    local artifact_path=$1
+    local metadata_file="${artifact_path}.json"
+    
+    # TODO: Read expected checksum from metadata
+    # TODO: Calculate actual checksum
+    # TODO: Compare and report result
+    
+    if [ ! -f "$metadata_file" ]; then
+        echo "Metadata file not found: $metadata_file"
+        return 1
+    fi
+    
+    expected_checksum=$(jq -r '.artifact.checksum.value' "$metadata_file")
+    actual_checksum=$(sha256sum "$artifact_path" | awk '{print $1}')
+    
+    if [ "$expected_checksum" = "$actual_checksum" ]; then
+        echo "Verification PASSED: Checksums match"
+        return 0
+    else
+        echo "Verification FAILED: Checksums do not match"
+        echo "Expected: $expected_checksum"
+        echo "Actual: $actual_checksum"
+        return 1
+    fi
+}
+
+case $1 in
+    list)
+        list_artifacts
+        ;;
+    info)
+        get_artifact_info "$2"
+        ;;
+    verify)
+        verify_artifact "$2"
+        ;;
+    *)
+        echo "Usage: $0 {list|info VERSION|verify ARTIFACT_PATH}"
+        exit 1
+        ;;
+esac
+EOF
+
+chmod +x query-artifacts.sh
+Step 5: Test Artifact Management
+# List all artifacts
+./query-artifacts.sh list
+
+# Get info for specific version
+./query-artifacts.sh info $(cat VERSION)
+
+# Verify artifact integrity
+artifact=$(ls builds/*.tar.gz | head -1)
+./query-artifacts.sh verify "$artifact"
+
+# View Git history with tags
+git log --oneline --decorate --graph
+
+# Show all tags with details
+git tag -n
+Verification
+Verify Version Management
+# Check version file exists and is valid
+test -f VERSION && echo "Version file exists: $(cat VERSION)"
+
+# Verify version format (semantic versioning)
+grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' VERSION && echo "Valid semantic version"
+Verify Build Artifacts
+# Check build directory
+ls -lh builds/
+
+# Verify artifact naming convention
+ls builds/ | grep -E 'app-[0-9]+\.[0-9]+\.[0-9]+-[0-9]+\.tar\.gz' && echo "Artifact naming correct"
+
+# Verify artifact contents
+tar -tzf builds/*.tar.gz | head -5
+Verify Metadata
+# Check metadata files exist
+ls -lh metadata/
+
+# Validate JSON structure
+for meta in metadata/*.json; do
+    jq empty "$meta" 2>/dev/null && echo "Valid JSON: $(basename $meta)"
+done
+
+# Verify required metadata fields
+jq -r '.artifact.version, .build.number, .source.commit' metadata/*.json | head -3
+Verify Git Tags
+# List all tags
+git tag
+
+# Verify tag format
+git tag | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' && echo "Tag format correct"
+
+# Show tag annotation
+git tag -n9 v$(cat VERSION)
+
+# Verify tag points to correct commit
+git rev-list -n 1 v$(cat VERSION)
+Complete Verification Script
+cat > verify-lab.sh << 'EOF'
+#!/bin/bash
+
+echo "=== Lab Verification ==="
+echo ""
+
+# Test 1: Version management
+echo "1. Version Management:"
+if [ -f VERSION ] && grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$' VERSION; then
+    echo "   PASS - Version file valid: $(cat VERSION)"
+else
+    echo "   FAIL - Version file missing or invalid"
+fi
+
+# Test 2: Build artifacts
+echo "2. Build Artifacts:"
+artifact_count=$(ls builds/*.tar.gz 2>/dev/null | wc -l)
+if [ "$artifact_count" -gt 0 ]; then
+    echo "   PASS - Found $artifact_count artifact(s)"
+else
+    echo "   FAIL - No artifacts found"
+fi
+
+# Test 3: Metadata
+echo "3. Metadata:"
+metadata_count=$(ls metadata/*.json 2>/dev/null | wc -l)
+if [ "$metadata_count" -gt 0 ]; then
+    echo "   PASS - Found $metadata_count metadata file(s)"
+else
+    echo "   FAIL - No metadata found"
+fi
+
+# Test 4: Git tags
+echo "4. Git Tags:"
+tag_count=$(git tag | wc -l)
+if [ "$tag_count" -gt 0 ]; then
+    echo "   PASS - Found $tag_count tag(s)"
+    git tag | head -3
+else
+    echo "   FAIL - No tags found"
+fi
+
+# Test 5: Checksum verification
+echo "5. Artifact Integrity:"
+artifact=$(ls builds/*.tar.gz 2>/dev/null | head -1)
+if [ -n "$artifact" ]; then
+    ./query-artifacts.sh verify "$artifact" >/dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        echo "   PASS - Artifact integrity verified"
+    else
+        echo "   FAIL - Artifact verification failed"
+    fi
+else
+    echo "   SKIP - No artifacts to verify"
+fi
+
+echo ""
+echo "=== Verification Complete ==="
+EOF
+
+chmod +x verify-lab.sh
+./verify-lab.sh
+Troubleshooting
+Common Issues
+Issue: Version bump doesn't work
+
+Verify VERSION file exists and is readable
+Check file permissions: chmod 644 VERSION
+Ensure version format is correct (MAJOR.MINOR.PATCH)
+Issue: Build script fails
+
+Check if all source files exist in src/ directory
+Verify tar command is available: which tar
+Ensure build and metadata directories are writable
+Issue: Git tag creation fails
+
+Verify Git repository is initialized: git status
+Check if tag already exists: git tag -l
+Ensure you have committed changes before tagging
+Issue: Metadata JSON is invalid
+
+Validate with: jq empty metadata/*.json
+Check for special characters in variables
+Verify jq is installed: which jq
+Issue: Checksum verification fails
+
+Ensure artifact hasn't been modified after build
+Check metadata file corresponds to correct artifact
+Verify sha256sum command is available
+Conclusion
+In this lab, you have successfully:
+
+Implemented a semantic versioning system for tracking software releases
+Created automated build scripts that generate versioned artifacts
+Generated comprehensive build metadata including checksums and source information
+Used Git tags to mark release points in version control
+Built tools to query and verify artifact integrity
+These skills are essential for DevOps engineers managing release pipelines, ensuring artifact traceability, and maintaining build reproducibility in production environments. Proper versioning and metadata management enables teams to track deployments, rollback releases, and maintain audit trails for compliance requirements.
+
+Key Takeaways:
+
+Semantic versioning provides clear communication about change impact
+Build metadata enables artifact traceability and verification
+Git tags create immutable markers for release points
+Checksums ensure artifact integrity throughout the deployment pipeline
+Automation reduces human error in release processes
