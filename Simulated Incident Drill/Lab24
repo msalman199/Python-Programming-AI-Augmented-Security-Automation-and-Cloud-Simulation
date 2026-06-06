@@ -1,0 +1,543 @@
+Simulated Incident Drill
+Prerequisites
+Basic Linux command line proficiency
+Understanding of system services and processes
+Familiarity with log file locations
+Basic scripting knowledge (Bash or Python)
+Understanding of web servers and databases
+Learning Objectives
+By completing this lab, you will:
+
+Practice structured incident response procedures
+Trigger and diagnose common system failures
+Follow runbook procedures for incident resolution
+Document incident response activities professionally
+Develop muscle memory for troubleshooting workflows
+Environment Setup
+Install Required Tools
+# Update package manager
+sudo apt update
+
+# Install web server
+sudo apt install -y nginx
+
+# Install database
+sudo apt install -y postgresql postgresql-contrib
+
+# Install monitoring tools
+sudo apt install -y sysstat htop
+
+# Install Python for scripting
+sudo apt install -y python3 python3-pip
+
+# Create working directory
+mkdir -p ~/incident-drill
+cd ~/incident-drill
+Verify Installations
+nginx -v
+psql --version
+python3 --version
+Task 1: Create Incident Scenarios and Runbooks
+Step 1: Set Up Baseline Services
+Create a simple web application:
+
+# Create web content
+sudo mkdir -p /var/www/incident-app
+sudo chown $USER:$USER /var/www/incident-app
+
+cat > /var/www/incident-app/index.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head><title>Incident Drill App</title></head>
+<body>
+<h1>Application Running</h1>
+<p>Status: Operational</p>
+</body>
+</html>
+EOF
+Configure Nginx:
+
+sudo tee /etc/nginx/sites-available/incident-app << 'EOF'
+server {
+    listen 8080;
+    server_name localhost;
+    root /var/www/incident-app;
+    index index.html;
+    
+    access_log /var/log/nginx/incident-app-access.log;
+    error_log /var/log/nginx/incident-app-error.log;
+}
+EOF
+
+sudo ln -sf /etc/nginx/sites-available/incident-app /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+Step 2: Create Incident Trigger Scripts
+Create script to simulate disk space issue:
+
+cat > ~/incident-drill/trigger-disk-full.sh << 'EOF'
+#!/bin/bash
+# Simulates disk space exhaustion
+
+FILL_DIR="/tmp/disk-fill-test"
+mkdir -p $FILL_DIR
+
+echo "Triggering disk space incident..."
+# TODO: Create large files to consume disk space
+# Hint: Use dd command to create files
+# Target: Fill until 90% capacity or 2GB, whichever comes first
+
+# YOUR CODE HERE
+
+echo "Disk space incident triggered"
+df -h
+EOF
+
+chmod +x ~/incident-drill/trigger-disk-full.sh
+Create script to simulate service crash:
+
+cat > ~/incident-drill/trigger-service-crash.sh << 'EOF'
+#!/bin/bash
+# Simulates service failure
+
+echo "Triggering service crash incident..."
+# TODO: Stop nginx service
+# TODO: Corrupt a configuration file to prevent restart
+
+# YOUR CODE HERE
+
+echo "Service crash incident triggered"
+EOF
+
+chmod +x ~/incident-drill/trigger-service-crash.sh
+Create script to simulate high CPU load:
+
+cat > ~/incident-drill/trigger-cpu-spike.sh << 'EOF'
+#!/bin/bash
+# Simulates CPU spike
+
+echo "Triggering CPU spike incident..."
+# TODO: Start background processes that consume CPU
+# Hint: Use stress-ng or create infinite loops
+# Run 4 processes for 300 seconds
+
+# YOUR CODE HERE
+
+echo "CPU spike incident triggered"
+EOF
+
+chmod +x ~/incident-drill/trigger-cpu-spike.sh
+Step 3: Create Runbook Templates
+Create master runbook:
+
+cat > ~/incident-drill/runbook-template.md << 'EOF'
+# Incident Response Runbook
+
+## Incident Information
+- **Incident ID**: [Auto-generated or manual]
+- **Severity**: [Critical/High/Medium/Low]
+- **Reported Time**: [Timestamp]
+- **Reported By**: [Name/System]
+- **Status**: [Investigating/Identified/Resolving/Resolved]
+
+## Initial Assessment
+- [ ] Verify incident is occurring
+- [ ] Check monitoring dashboards
+- [ ] Identify affected services
+- [ ] Determine user impact
+
+## Investigation Steps
+1. Check service status
+2. Review recent changes
+3. Examine logs
+4. Check system resources
+
+## Resolution Steps
+[Specific to incident type]
+
+## Verification
+- [ ] Service responding
+- [ ] Metrics normal
+- [ ] No error logs
+- [ ] User access confirmed
+
+## Post-Incident
+- [ ] Document root cause
+- [ ] Update runbook
+- [ ] Schedule post-mortem
+EOF
+Create specific runbook for disk space:
+
+cat > ~/incident-drill/runbook-disk-space.md << 'EOF'
+# Runbook: Disk Space Exhaustion
+
+## Detection
+```bash
+# Check disk usage
+df -h
+
+# Find large files
+du -sh /* 2>/dev/null | sort -hr | head -10
+
+# Check inode usage
+df -i
+Investigation
+# TODO: Add commands to identify what's consuming space
+# Hint: Use du, find, and lsof commands
+
+# YOUR COMMANDS HERE
+Resolution
+# TODO: Add commands to free up space safely
+# Consider: log rotation, temp files, old packages
+
+# YOUR COMMANDS HERE
+Prevention
+Set up disk space monitoring alerts
+Implement log rotation
+Regular cleanup jobs EOF
+
+Create runbook for service failures:
+
+```bash
+cat > ~/incident-drill/runbook-service-failure.md << 'EOF'
+# Runbook: Service Failure
+
+## Detection
+```bash
+# Check service status
+systemctl status nginx
+
+# Check if port is listening
+sudo netstat -tlnp | grep :8080
+Investigation
+# TODO: Add commands to diagnose service failure
+# Check: logs, configuration, dependencies, resources
+
+# YOUR COMMANDS HERE
+Resolution
+# TODO: Add commands to restore service
+# Steps: validate config, restart service, verify
+
+# YOUR COMMANDS HERE
+Verification
+# Test service
+curl -I http://localhost:8080
+EOF
+
+
+## Task 2: Execute Incident Response Drill
+
+### Step 1: Create Incident Documentation System
+
+```python
+cat > ~/incident-drill/incident_logger.py << 'EOF'
+#!/usr/bin/env python3
+"""
+Incident logging and documentation system
+"""
+import json
+import datetime
+from pathlib import Path
+
+class IncidentLogger:
+    def __init__(self, log_dir="incident-logs"):
+        self.log_dir = Path(log_dir)
+        self.log_dir.mkdir(exist_ok=True)
+        self.current_incident = None
+    
+    def start_incident(self, incident_type, severity):
+        """
+        Start a new incident and create log file
+        
+        Args:
+            incident_type: Type of incident (disk, service, cpu, etc.)
+            severity: Severity level (critical, high, medium, low)
+        
+        Returns:
+            incident_id: Unique identifier for this incident
+        """
+        # TODO: Generate incident ID with timestamp
+        # TODO: Create incident dictionary with metadata
+        # TODO: Save to JSON file
+        # TODO: Return incident ID
+        pass
+    
+    def log_action(self, incident_id, action, result):
+        """
+        Log an action taken during incident response
+        
+        Args:
+            incident_id: The incident identifier
+            action: Description of action taken
+            result: Result or output of the action
+        """
+        # TODO: Load incident file
+        # TODO: Append action with timestamp
+        # TODO: Save updated incident file
+        pass
+    
+    def close_incident(self, incident_id, resolution, root_cause):
+        """
+        Close an incident with resolution details
+        
+        Args:
+            incident_id: The incident identifier
+            resolution: How the incident was resolved
+            root_cause: Identified root cause
+        """
+        # TODO: Load incident file
+        # TODO: Add resolution details and close time
+        # TODO: Calculate total duration
+        # TODO: Save final incident report
+        pass
+    
+    def generate_report(self, incident_id):
+        """
+        Generate human-readable incident report
+        
+        Args:
+            incident_id: The incident identifier
+        
+        Returns:
+            Formatted report string
+        """
+        # TODO: Load incident data
+        # TODO: Format as readable report
+        # TODO: Return formatted string
+        pass
+
+if __name__ == "__main__":
+    # Example usage
+    logger = IncidentLogger()
+    print("Incident Logger initialized")
+EOF
+
+chmod +x ~/incident-drill/incident_logger.py
+Step 2: Create Drill Execution Script
+cat > ~/incident-drill/execute-drill.sh << 'EOF'
+#!/bin/bash
+# Main drill execution script
+
+DRILL_TYPE=$1
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+LOG_FILE="drill-${DRILL_TYPE}-${TIMESTAMP}.log"
+
+# Function to log with timestamp
+log_action() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a $LOG_FILE
+}
+
+# Function to capture system state
+capture_state() {
+    log_action "=== System State Capture ==="
+    # TODO: Capture relevant system metrics
+    # Include: CPU, memory, disk, network, services
+    
+    # YOUR CODE HERE
+}
+
+# Function to execute drill
+execute_drill() {
+    log_action "Starting $DRILL_TYPE drill"
+    
+    # TODO: Capture pre-incident state
+    # TODO: Trigger the incident
+    # TODO: Begin response procedures
+    # TODO: Document each step
+    # TODO: Resolve incident
+    # TODO: Verify resolution
+    # TODO: Capture post-incident state
+    
+    # YOUR CODE HERE
+}
+
+# Main execution
+case $DRILL_TYPE in
+    disk)
+        log_action "Executing disk space drill"
+        execute_drill
+        ;;
+    service)
+        log_action "Executing service failure drill"
+        execute_drill
+        ;;
+    cpu)
+        log_action "Executing CPU spike drill"
+        execute_drill
+        ;;
+    *)
+        echo "Usage: $0 {disk|service|cpu}"
+        exit 1
+        ;;
+esac
+
+log_action "Drill completed. Review log: $LOG_FILE"
+EOF
+
+chmod +x ~/incident-drill/execute-drill.sh
+Step 3: Practice Full Incident Response
+Execute a complete drill following this workflow:
+
+# 1. Baseline check
+echo "=== Pre-Drill System Check ===" > drill-baseline.txt
+date >> drill-baseline.txt
+df -h >> drill-baseline.txt
+systemctl status nginx >> drill-baseline.txt
+top -bn1 | head -20 >> drill-baseline.txt
+
+# 2. Trigger incident (choose one)
+# ./trigger-disk-full.sh
+# ./trigger-service-crash.sh
+# ./trigger-cpu-spike.sh
+
+# 3. Detect and document
+# TODO: Use monitoring commands to detect the issue
+# TODO: Document initial findings
+
+# 4. Follow runbook
+# TODO: Execute investigation steps from appropriate runbook
+# TODO: Log each command and result
+
+# 5. Resolve incident
+# TODO: Execute resolution steps
+# TODO: Verify each step
+
+# 6. Post-incident verification
+# TODO: Confirm all services operational
+# TODO: Compare to baseline
+# TODO: Document lessons learned
+Step 4: Create Post-Incident Report Template
+cat > ~/incident-drill/post-incident-template.md << 'EOF'
+# Post-Incident Report
+
+## Executive Summary
+- **Incident Date**: 
+- **Duration**: 
+- **Severity**: 
+- **Services Affected**: 
+- **User Impact**: 
+
+## Timeline
+| Time | Event |
+|------|-------|
+| | Incident began |
+| | Incident detected |
+| | Response initiated |
+| | Root cause identified |
+| | Resolution applied |
+| | Service restored |
+| | Incident closed |
+
+## Root Cause Analysis
+### What Happened
+[Detailed description]
+
+### Why It Happened
+[Root cause]
+
+### Contributing Factors
+- Factor 1
+- Factor 2
+
+## Response Evaluation
+### What Went Well
+- 
+- 
+
+### What Could Be Improved
+- 
+- 
+
+## Action Items
+| Action | Owner | Due Date | Status |
+|--------|-------|----------|--------|
+| | | | |
+
+## Lessons Learned
+1. 
+2. 
+3. 
+
+## Preventive Measures
+- 
+- 
+EOF
+Verification
+Verify Drill Infrastructure
+# Check all scripts are executable
+ls -l ~/incident-drill/*.sh
+
+# Verify services are running
+systemctl status nginx
+curl -I http://localhost:8080
+
+# Test logging system
+python3 ~/incident-drill/incident_logger.py
+
+# Verify runbooks exist
+ls -l ~/incident-drill/runbook-*.md
+Verify Drill Execution
+After completing a drill, verify:
+
+# Check drill logs were created
+ls -lh ~/incident-drill/drill-*.log
+
+# Verify incident was resolved
+df -h  # For disk drill
+systemctl status nginx  # For service drill
+top -bn1 | head -5  # For CPU drill
+
+# Confirm documentation exists
+ls -l ~/incident-drill/incident-logs/
+Complete Drill Checklist
+ All trigger scripts created and executable
+ Runbooks documented for each scenario
+ Incident logger implemented
+ At least one full drill executed
+ Incident documented from start to finish
+ System restored to baseline state
+ Post-incident report completed
+ Lessons learned documented
+Troubleshooting
+Issue: Scripts fail with permission errors
+
+Solution: Ensure scripts are executable with chmod +x
+Check file ownership with ls -l
+Issue: Services won't start after drill
+
+Check configuration files for corruption
+Review service logs: journalctl -u nginx -n 50
+Restore from backup if needed
+Issue: Disk fill script fills entire disk
+
+Stop script immediately: pkill -f disk-fill
+Remove test files: sudo rm -rf /tmp/disk-fill-test
+Add safety checks to limit fill amount
+Issue: Can't access logs
+
+Check log directory permissions
+Verify log rotation hasn't moved files
+Use sudo if accessing system logs
+Conclusion
+You have successfully created and executed a simulated incident response drill. You practiced:
+
+Setting up realistic incident scenarios
+Creating and following structured runbooks
+Documenting incident response activities
+Executing investigation and resolution procedures
+Performing post-incident analysis
+These skills are essential for DevOps engineers who must respond to production incidents quickly and effectively. Regular drill practice builds muscle memory and confidence for handling real incidents.
+
+Key Takeaways:
+
+Structured runbooks reduce response time
+Documentation during incidents is critical
+Practice reveals gaps in procedures
+Post-incident reviews drive improvement
+Next Steps:
+
+Create runbooks for additional scenarios
+Implement automated monitoring and alerting
+Practice drills regularly with team members
+Build a library of incident response patterns
+Total estimated completion time: 90-120 minutes
