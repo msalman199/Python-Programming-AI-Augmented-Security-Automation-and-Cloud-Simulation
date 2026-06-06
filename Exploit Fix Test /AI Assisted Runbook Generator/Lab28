@@ -1,0 +1,451 @@
+AI-Assisted Runbook Generator
+Prerequisites
+Basic Linux command-line knowledge
+Understanding of system administration concepts
+Familiarity with Python programming
+Basic knowledge of JSON and YAML formats
+Understanding of DevOps documentation practices
+Learning Objectives
+By completing this lab, you will:
+
+Automate runbook generation using AI language models
+Collect and structure system context for documentation
+Integrate local AI models for documentation tasks
+Create standardized operational procedures programmatically
+Build reusable templates for incident response documentation
+Environment Setup
+Install Required Tools
+# Update system packages
+sudo apt update
+
+# Install Python and pip
+sudo apt install -y python3 python3-pip python3-venv
+
+# Install system monitoring tools
+sudo apt install -y sysstat net-tools curl jq
+
+# Create project directory
+mkdir -p ~/runbook-generator
+cd ~/runbook-generator
+
+# Create Python virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install Python dependencies
+pip install ollama requests pyyaml jinja2
+Install Ollama (Local AI Model)
+# Download and install Ollama
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Start Ollama service
+ollama serve &
+
+# Wait for service to start
+sleep 5
+
+# Pull a lightweight model
+ollama pull llama3.2:1b
+Task 1: Build System Context Collector
+Create a script to gather system information that will be used as context for runbook generation.
+
+Step 1: Create Context Collection Script
+Create collect_context.py:
+
+#!/usr/bin/env python3
+import subprocess
+import json
+import socket
+from datetime import datetime
+
+class SystemContextCollector:
+    """Collects system information for runbook generation."""
+    
+    def __init__(self):
+        self.context = {
+            "timestamp": datetime.now().isoformat(),
+            "hostname": socket.gethostname(),
+            "system_info": {},
+            "services": [],
+            "network": {},
+            "disk": {}
+        }
+    
+    def collect_system_info(self):
+        """
+        Collect basic system information.
+        TODO: Implement collection of:
+        - OS version (from /etc/os-release)
+        - Kernel version (uname -r)
+        - CPU info (lscpu or /proc/cpuinfo)
+        - Memory info (free -h)
+        """
+        # TODO: Parse /etc/os-release for OS details
+        # TODO: Execute system commands and capture output
+        # TODO: Store results in self.context['system_info']
+        pass
+    
+    def collect_service_status(self, services):
+        """
+        Collect status of specified services.
+        
+        Args:
+            services: List of service names to check
+        
+        TODO: Implement service status collection using systemctl
+        """
+        # TODO: For each service, check if active/inactive
+        # TODO: Get service description and main PID
+        # TODO: Append to self.context['services']
+        pass
+    
+    def collect_network_info(self):
+        """
+        Collect network configuration.
+        TODO: Implement collection of:
+        - Active network interfaces
+        - IP addresses
+        - Open listening ports
+        """
+        # TODO: Parse ip addr or ifconfig output
+        # TODO: Check listening ports with ss or netstat
+        # TODO: Store in self.context['network']
+        pass
+    
+    def collect_disk_info(self):
+        """
+        Collect disk usage information.
+        TODO: Implement disk space collection using df command
+        """
+        # TODO: Execute df -h and parse output
+        # TODO: Store filesystem usage in self.context['disk']
+        pass
+    
+    def export_context(self, filename="system_context.json"):
+        """Export collected context to JSON file."""
+        with open(filename, 'w') as f:
+            json.dump(self.context, f, indent=2)
+        return filename
+
+# Starter code for testing
+if __name__ == "__main__":
+    collector = SystemContextCollector()
+    # TODO: Call collection methods
+    # TODO: Export context to file
+    print("Context collection complete")
+Step 2: Implement Context Collection
+Complete the TODO sections in collect_context.py. Here are hints:
+
+For system info:
+
+# Hint: Use subprocess.run() to execute commands
+result = subprocess.run(['command', 'args'], capture_output=True, text=True)
+output = result.stdout
+For service status:
+
+# Hint: Check systemctl status
+# systemctl is-active <service>
+# systemctl status <service> --no-pager
+Step 3: Test Context Collection
+# Make script executable
+chmod +x collect_context.py
+
+# Run with common services
+python3 collect_context.py
+
+# Verify output
+cat system_context.json | jq '.'
+Task 2: Create AI-Powered Runbook Generator
+Build the runbook generator that uses collected context and AI to create documentation.
+
+Step 1: Create Runbook Generator Script
+Create runbook_generator.py:
+
+#!/usr/bin/env python3
+import json
+import requests
+import yaml
+from jinja2 import Template
+from datetime import datetime
+
+class RunbookGenerator:
+    """Generates operational runbooks using AI assistance."""
+    
+    def __init__(self, ollama_url="http://localhost:11434"):
+        self.ollama_url = ollama_url
+        self.model = "llama3.2:1b"
+    
+    def load_context(self, context_file):
+        """Load system context from JSON file."""
+        with open(context_file, 'r') as f:
+            return json.load(f)
+    
+    def create_prompt(self, context, scenario):
+        """
+        Create AI prompt for runbook generation.
+        
+        Args:
+            context: System context dictionary
+            scenario: Incident scenario description
+        
+        Returns:
+            Formatted prompt string
+        
+        TODO: Build a structured prompt that includes:
+        - System context summary
+        - Scenario description
+        - Request for step-by-step runbook
+        - Format requirements (numbered steps, clear actions)
+        """
+        prompt = f"""
+        # TODO: Create comprehensive prompt template
+        # Include: system info, scenario, expected output format
+        """
+        return prompt
+    
+    def generate_with_ai(self, prompt):
+        """
+        Call Ollama API to generate runbook content.
+        
+        Args:
+            prompt: The formatted prompt string
+        
+        Returns:
+            Generated text from AI model
+        
+        TODO: Implement API call to Ollama
+        - POST to /api/generate endpoint
+        - Handle streaming response
+        - Extract generated text
+        """
+        # TODO: Prepare request payload
+        # TODO: Make POST request to Ollama
+        # TODO: Parse response and return generated text
+        pass
+    
+    def format_runbook(self, ai_output, context, scenario):
+        """
+        Format AI output into structured runbook.
+        
+        Args:
+            ai_output: Raw text from AI
+            context: System context
+            scenario: Scenario description
+        
+        Returns:
+            Formatted runbook as dictionary
+        
+        TODO: Structure the runbook with:
+        - Title and metadata
+        - System information section
+        - Prerequisites
+        - Procedure steps
+        - Verification steps
+        - Rollback procedures
+        """
+        runbook = {
+            "title": "",
+            "created": datetime.now().isoformat(),
+            "system": {},
+            "scenario": scenario,
+            "procedure": [],
+            "verification": [],
+            "rollback": []
+        }
+        # TODO: Parse AI output and populate runbook sections
+        # TODO: Add system context information
+        return runbook
+    
+    def export_runbook(self, runbook, format="markdown"):
+        """
+        Export runbook to file.
+        
+        Args:
+            runbook: Runbook dictionary
+            format: Output format (markdown or yaml)
+        
+        TODO: Implement export in both formats
+        """
+        # TODO: Create markdown template
+        # TODO: Render runbook to markdown
+        # TODO: Also support YAML export
+        pass
+
+# Example usage template
+if __name__ == "__main__":
+    generator = RunbookGenerator()
+    
+    # TODO: Load context
+    # TODO: Define scenario
+    # TODO: Generate runbook
+    # TODO: Export to file
+    
+    print("Runbook generation complete")
+Step 2: Implement AI Integration
+Complete the generate_with_ai method:
+
+# Hint for Ollama API call:
+def generate_with_ai(self, prompt):
+    payload = {
+        "model": self.model,
+        "prompt": prompt,
+        "stream": False
+    }
+    
+    response = requests.post(
+        f"{self.ollama_url}/api/generate",
+        json=payload
+    )
+    
+    # TODO: Extract 'response' field from JSON
+    # TODO: Handle errors appropriately
+    # TODO: Return generated text
+Step 3: Create Runbook Template
+Create runbook_template.md:
+
+# {{ title }}
+
+**Generated:** {{ created }}
+**Hostname:** {{ hostname }}
+**Scenario:** {{ scenario }}
+
+## System Information
+
+- **OS:** {{ os_version }}
+- **Kernel:** {{ kernel }}
+- **Memory:** {{ memory }}
+
+## Prerequisites
+
+{{ prerequisites }}
+
+## Procedure
+
+{{ procedure }}
+
+## Verification Steps
+
+{{ verification }}
+
+## Rollback Procedure
+
+{{ rollback }}
+
+---
+*Auto-generated runbook - Review before use in production*
+Step 4: Implement Complete Workflow
+Create generate_runbook.py to tie everything together:
+
+#!/usr/bin/env python3
+from collect_context import SystemContextCollector
+from runbook_generator import RunbookGenerator
+import sys
+
+def main():
+    """
+    Main workflow for runbook generation.
+    
+    TODO: Implement complete workflow:
+    1. Collect system context
+    2. Define incident scenario
+    3. Generate runbook using AI
+    4. Export to markdown and YAML
+    5. Display summary
+    """
+    
+    # Example scenarios to implement
+    scenarios = {
+        "high_cpu": "CPU usage is at 95% and application is slow",
+        "disk_full": "Root filesystem is 98% full",
+        "service_down": "Web service is not responding to requests"
+    }
+    
+    # TODO: Get scenario from command line or use default
+    # TODO: Collect context
+    # TODO: Generate runbook
+    # TODO: Save outputs
+    
+    print("Runbook generated successfully")
+
+if __name__ == "__main__":
+    main()
+Verification
+Test 1: Verify Context Collection
+# Run context collector
+python3 collect_context.py
+
+# Check output structure
+cat system_context.json | jq '.system_info, .network, .disk'
+Expected output: JSON with system details, network info, and disk usage.
+
+Test 2: Verify AI Model
+# Test Ollama directly
+curl http://localhost:11434/api/generate -d '{
+  "model": "llama3.2:1b",
+  "prompt": "List 3 steps to troubleshoot high CPU usage",
+  "stream": false
+}'
+Expected output: JSON response with generated troubleshooting steps.
+
+Test 3: Generate Sample Runbook
+# Generate runbook for high CPU scenario
+python3 generate_runbook.py high_cpu
+
+# Verify output files
+ls -lh runbook_*.md runbook_*.yaml
+
+# Review generated content
+cat runbook_high_cpu.md
+Expected output: Formatted markdown runbook with system context and AI-generated procedures.
+
+Test 4: Validate Runbook Quality
+Check that generated runbook includes:
+
+System information from context
+Clear numbered steps
+Verification procedures
+Rollback instructions
+Proper markdown formatting
+Troubleshooting
+Ollama not responding:
+
+# Check if Ollama is running
+ps aux | grep ollama
+
+# Restart if needed
+pkill ollama
+ollama serve &
+Model not found:
+
+# List available models
+ollama list
+
+# Pull model again if missing
+ollama pull llama3.2:1b
+Context collection fails:
+
+# Check permissions
+ls -l /proc/cpuinfo /etc/os-release
+
+# Install missing tools
+sudo apt install -y sysstat procps
+AI generates poor quality output:
+
+Improve prompt with more specific instructions
+Add examples in the prompt
+Try a larger model: ollama pull llama3.2:3b
+Conclusion
+You have successfully built an AI-assisted runbook generator that:
+
+Automatically collects system context and configuration
+Uses local AI models to generate operational documentation
+Creates standardized runbooks for common incident scenarios
+Exports documentation in multiple formats
+This automation significantly reduces the time DevOps engineers spend creating documentation and ensures consistency across operational procedures. The system can be extended with additional scenarios, custom templates, and integration with incident management systems.
+
+Key Takeaways:
+
+AI can accelerate documentation tasks when provided with proper context
+Local AI models (Ollama) enable automation without external API dependencies
+Structured prompts produce better quality outputs
+Combining system data with AI generation creates practical, actionable runbooks
