@@ -1,0 +1,344 @@
+Video
+Lab Material
+Lab 21: Structured Logging and Correlation IDs
+Prerequisites
+Basic understanding of Linux command line
+Familiarity with Python programming
+Knowledge of HTTP requests and APIs
+Understanding of logging concepts
+Basic experience with Flask or similar web frameworks
+Learning Objectives
+By completing this lab, you will:
+
+Implement structured logging using JSON format for better log parsing
+Create and propagate correlation IDs across service boundaries
+Improve application traceability and debugging capabilities
+Configure centralized log aggregation for distributed systems
+Environment Setup
+Install Required Tools
+# Update package manager
+sudo apt update
+
+# Install Python and pip
+sudo apt install -y python3 python3-pip python3-venv
+
+# Create project directory
+mkdir -p ~/logging-lab
+cd ~/logging-lab
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install required packages
+pip install flask python-json-logger requests
+Task 1: Implement Structured Logging
+Step 1: Create Base Application with Structured Logging
+Create a file named app.py:
+
+from flask import Flask, request, jsonify, g
+import logging
+from pythonjsonlogger import jsonlogger
+import uuid
+import time
+
+app = Flask(__name__)
+
+# TODO: Configure structured JSON logger
+def setup_logging():
+    """
+    Configure structured logging with JSON format.
+    Should include: timestamp, level, correlation_id, message, and extra fields
+    """
+    log_handler = logging.StreamHandler()
+    formatter = jsonlogger.JsonFormatter(
+        '%(timestamp)s %(level)s %(name)s %(correlation_id)s %(message)s'
+    )
+    log_handler.setFormatter(formatter)
+    
+    logger = logging.getLogger()
+    logger.addHandler(log_handler)
+    logger.setLevel(logging.INFO)
+    
+    return logger
+
+logger = setup_logging()
+
+# TODO: Implement middleware to extract or generate correlation ID
+@app.before_request
+def before_request():
+    """
+    Extract correlation ID from headers or generate new one.
+    Store in Flask's g object for request context.
+    """
+    # TODO: Get correlation ID from X-Correlation-ID header or generate new UUID
+    # TODO: Store in g.correlation_id
+    pass
+
+# TODO: Create custom logging function that includes correlation ID
+def log_with_context(level, message, **kwargs):
+    """
+    Log message with correlation ID and additional context.
+    
+    Args:
+        level: Log level (info, warning, error)
+        message: Log message
+        **kwargs: Additional fields to include in log
+    """
+    # TODO: Add correlation_id and timestamp to kwargs
+    # TODO: Call appropriate logger method based on level
+    pass
+
+@app.route('/api/users', methods=['GET'])
+def get_users():
+    """Endpoint to retrieve users with structured logging"""
+    # TODO: Log incoming request with correlation ID
+    
+    # Simulate processing
+    time.sleep(0.1)
+    
+    users = [
+        {"id": 1, "name": "Alice"},
+        {"id": 2, "name": "Bob"}
+    ]
+    
+    # TODO: Log successful response
+    
+    return jsonify(users)
+
+@app.route('/api/orders', methods=['POST'])
+def create_order():
+    """Endpoint to create order with error handling and logging"""
+    # TODO: Log incoming request with payload info
+    
+    data = request.get_json()
+    
+    # TODO: Add validation and log validation errors
+    
+    # Simulate order creation
+    order = {
+        "order_id": str(uuid.uuid4()),
+        "user_id": data.get('user_id'),
+        "amount": data.get('amount')
+    }
+    
+    # TODO: Log successful order creation with order details
+    
+    return jsonify(order), 201
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=False)
+Step 2: Test Structured Logging
+# Run the application
+python app.py &
+
+# Wait for startup
+sleep 2
+
+# Test endpoints and observe JSON logs
+curl http://localhost:5000/api/users
+
+curl -X POST http://localhost:5000/api/orders \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": 1, "amount": 99.99}'
+Task 2: Propagate Correlation IDs Across Services
+Step 1: Create Downstream Service
+Create service_b.py:
+
+from flask import Flask, request, jsonify
+import logging
+from pythonjsonlogger import jsonlogger
+import time
+
+app = Flask(__name__)
+
+# TODO: Setup structured logging (similar to service A)
+def setup_logging():
+    """Configure JSON logging for service B"""
+    # TODO: Implement JSON logger configuration
+    pass
+
+logger = setup_logging()
+
+# TODO: Implement correlation ID extraction
+@app.before_request
+def before_request():
+    """Extract correlation ID from incoming requests"""
+    # TODO: Extract X-Correlation-ID header
+    # TODO: Store in request context
+    pass
+
+@app.route('/api/inventory/check', methods=['POST'])
+def check_inventory():
+    """Check inventory availability"""
+    # TODO: Log request with correlation ID
+    
+    data = request.get_json()
+    product_id = data.get('product_id')
+    
+    # Simulate inventory check
+    time.sleep(0.05)
+    
+    result = {
+        "product_id": product_id,
+        "available": True,
+        "quantity": 50
+    }
+    
+    # TODO: Log result with correlation ID
+    
+    return jsonify(result)
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5001, debug=False)
+Step 2: Update Main Service to Propagate Correlation ID
+Add to app.py:
+
+import requests
+
+@app.route('/api/orders/full', methods=['POST'])
+def create_full_order():
+    """
+    Create order with inventory check - demonstrates correlation ID propagation
+    """
+    # TODO: Log start of order process
+    
+    data = request.get_json()
+    
+    # TODO: Make request to service B with correlation ID in headers
+    # Headers should include: X-Correlation-ID from g.correlation_id
+    
+    # Example structure:
+    # headers = {'X-Correlation-ID': g.correlation_id, 'Content-Type': 'application/json'}
+    # response = requests.post('http://localhost:5001/api/inventory/check', 
+    #                          json={'product_id': data.get('product_id')}, 
+    #                          headers=headers)
+    
+    # TODO: Log inventory check result
+    
+    # TODO: Create order and log completion
+    
+    order = {
+        "order_id": str(uuid.uuid4()),
+        "product_id": data.get('product_id'),
+        "status": "confirmed"
+    }
+    
+    return jsonify(order), 201
+Step 3: Test Correlation ID Propagation
+# Start service B in background
+python service_b.py &
+
+# Wait for startup
+sleep 2
+
+# Test with custom correlation ID
+curl -X POST http://localhost:5000/api/orders/full \
+  -H "Content-Type: application/json" \
+  -H "X-Correlation-ID: test-12345" \
+  -d '{"product_id": "prod-001", "user_id": 1}'
+
+# Check logs - both services should show same correlation ID
+Step 4: Create Log Analysis Script
+Create analyze_logs.py:
+
+import json
+import sys
+from collections import defaultdict
+
+def analyze_logs(log_file):
+    """
+    Analyze structured logs and group by correlation ID
+    
+    Args:
+        log_file: Path to log file with JSON logs
+    """
+    # TODO: Read log file line by line
+    # TODO: Parse each JSON log entry
+    # TODO: Group logs by correlation_id
+    # TODO: Print summary showing request flow
+    
+    correlation_groups = defaultdict(list)
+    
+    # TODO: Implement log parsing and grouping
+    
+    # TODO: Print results showing:
+    # - Correlation ID
+    # - Timestamp sequence
+    # - Services involved
+    # - Request flow
+    
+    pass
+
+if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        analyze_logs(sys.argv[1])
+    else:
+        print("Usage: python analyze_logs.py <log_file>")
+Verification
+Verify Structured Logging
+# Check that logs are in JSON format
+curl http://localhost:5000/api/users 2>&1 | grep -o '{.*correlation_id.*}'
+
+# Verify all required fields present
+# Expected fields: timestamp, level, correlation_id, message
+Verify Correlation ID Propagation
+# Send request with custom correlation ID
+CORRELATION_ID="verify-$(date +%s)"
+
+curl -X POST http://localhost:5000/api/orders/full \
+  -H "Content-Type: application/json" \
+  -H "X-Correlation-ID: $CORRELATION_ID" \
+  -d '{"product_id": "test-prod", "user_id": 1}' \
+  > /dev/null 2>&1
+
+# Search logs for correlation ID in both services
+echo "Checking correlation ID propagation..."
+ps aux | grep -E "python.*service" | grep -v grep
+Test Log Traceability
+# Generate multiple requests
+for i in {1..3}; do
+  curl -X POST http://localhost:5000/api/orders/full \
+    -H "Content-Type: application/json" \
+    -d "{\"product_id\": \"prod-$i\", \"user_id\": $i}" \
+    > /dev/null 2>&1
+  sleep 1
+done
+
+# Logs should show distinct correlation IDs for each request
+Expected Outcomes
+After completing this lab, you should have:
+
+Structured JSON Logs: All log entries in parseable JSON format with consistent fields
+Correlation ID System: Automatic generation and propagation of correlation IDs across service boundaries
+Request Traceability: Ability to trace complete request flow across multiple services using correlation ID
+Log Analysis Capability: Tools to group and analyze logs by correlation ID
+Troubleshooting Tips
+Logs not in JSON format:
+
+Verify pythonjsonlogger is installed correctly
+Check JsonFormatter configuration includes all required fields
+Ensure logger level is set to INFO or DEBUG
+Correlation ID not propagating:
+
+Verify X-Correlation-ID header is being set in outgoing requests
+Check that before_request middleware is extracting header correctly
+Confirm g.correlation_id is accessible in request context
+Services not responding:
+
+Check if ports 5000 and 5001 are available: netstat -tlnp | grep -E '5000|5001'
+Verify services are running: ps aux | grep python
+Check for errors in service output
+Missing log fields:
+
+Ensure extra fields are passed to logger methods
+Verify JsonFormatter format string includes all desired fields
+Check that log_with_context function adds required context
+Conclusion
+You have successfully implemented structured logging with correlation IDs, a critical practice for modern distributed systems. This approach enables:
+
+Faster debugging by tracing requests across service boundaries
+Better observability through parseable, queryable log data
+Improved monitoring with consistent log structure for automated analysis
+Enhanced troubleshooting by correlating related log entries
+These skills are essential for DevOps engineers managing microservices architectures and distributed applications in production environments.
