@@ -1,0 +1,621 @@
+Dependency Policy and Safe Upgrades
+Prerequisites
+Basic understanding of package management concepts
+Familiarity with Linux command line
+Knowledge of Python or Node.js package ecosystems
+Understanding of semantic versioning (MAJOR.MINOR.PATCH)
+Basic Git operations
+Learning Objectives
+By the end of this lab, you will be able to:
+
+Define and implement dependency upgrade policies
+Test dependency changes safely before production deployment
+Identify and mitigate dependency-related risks
+Automate dependency security scanning
+Create rollback strategies for failed upgrades
+Environment Setup
+You will work on a single Linux machine provided by Al Nafi. Click the "Start Lab" button to access your environment.
+
+Install Required Tools
+# Update system packages
+sudo apt update
+
+# Install Python and pip
+sudo apt install -y python3 python3-pip python3-venv git
+
+# Install Node.js and npm
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# Verify installations
+python3 --version
+pip3 --version
+node --version
+npm --version
+Task 1: Define Upgrade Policies
+Step 1: Create Project Structure
+# Create project directory
+mkdir -p ~/dependency-lab
+cd ~/dependency-lab
+
+# Create Python project
+mkdir python-app
+cd python-app
+
+# Initialize Python virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Create requirements files
+touch requirements.txt requirements-dev.txt
+Step 2: Set Up Dependency Policy Configuration
+Create a dependency policy file:
+
+cat > dependency-policy.yaml << 'EOF'
+# Dependency Upgrade Policy Configuration
+
+policy:
+  version: "1.0"
+  
+  update_schedule:
+    security_patches: "immediate"
+    minor_updates: "weekly"
+    major_updates: "quarterly"
+  
+  approval_requirements:
+    security: "auto-approve"
+    minor: "team-lead"
+    major: "architecture-review"
+  
+  testing_requirements:
+    security:
+      - unit_tests
+      - integration_tests
+    minor:
+      - unit_tests
+      - integration_tests
+      - smoke_tests
+    major:
+      - full_test_suite
+      - performance_tests
+      - security_audit
+  
+  allowed_licenses:
+    - MIT
+    - Apache-2.0
+    - BSD-3-Clause
+    - ISC
+  
+  blocked_packages:
+    - example-malicious-package
+  
+  version_constraints:
+    python: ">=3.8,<4.0"
+    node: ">=16.0.0,<19.0.0"
+EOF
+Step 3: Create Sample Application with Dependencies
+# Create sample Python application
+cat > app.py << 'EOF'
+"""
+Sample application with dependencies
+"""
+import requests
+from flask import Flask, jsonify
+
+app = Flask(__name__)
+
+@app.route('/health')
+def health_check():
+    """Health check endpoint"""
+    return jsonify({"status": "healthy"})
+
+@app.route('/fetch')
+def fetch_data():
+    """Fetch external data"""
+    # TODO: Implement error handling
+    # TODO: Add timeout configuration
+    response = requests.get('https://api.github.com')
+    return jsonify({"status_code": response.status_code})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
+EOF
+Step 4: Define Initial Dependencies
+# Create requirements.txt with pinned versions
+cat > requirements.txt << 'EOF'
+flask==2.3.0
+requests==2.28.0
+werkzeug==2.3.0
+EOF
+
+# Create development dependencies
+cat > requirements-dev.txt << 'EOF'
+-r requirements.txt
+pytest==7.3.0
+pytest-cov==4.0.0
+safety==2.3.0
+pip-audit==2.5.0
+EOF
+
+# Install dependencies
+pip install -r requirements-dev.txt
+Step 5: Create Dependency Scanning Script
+Create a script to check for vulnerabilities:
+
+cat > check_dependencies.py << 'EOF'
+#!/usr/bin/env python3
+"""
+Dependency security and policy checker
+"""
+import subprocess
+import json
+import sys
+
+def run_safety_check():
+    """
+    Run safety check for known vulnerabilities
+    
+    Returns:
+        tuple: (exit_code, output)
+    """
+    # TODO: Implement safety check execution
+    # TODO: Parse and format output
+    # TODO: Return structured results
+    pass
+
+def run_pip_audit():
+    """
+    Run pip-audit for CVE scanning
+    
+    Returns:
+        dict: Audit results
+    """
+    # TODO: Execute pip-audit command
+    # TODO: Handle JSON output parsing
+    # TODO: Filter by severity levels
+    pass
+
+def check_license_compliance(package_name):
+    """
+    Check if package license is allowed
+    
+    Args:
+        package_name: Name of the package to check
+    
+    Returns:
+        bool: True if license is compliant
+    """
+    # TODO: Retrieve package license information
+    # TODO: Compare against allowed licenses
+    # TODO: Return compliance status
+    pass
+
+def generate_upgrade_report():
+    """
+    Generate report of available upgrades
+    
+    Returns:
+        dict: Upgrade recommendations by severity
+    """
+    # TODO: Check for outdated packages
+    # TODO: Categorize by update type (major/minor/patch)
+    # TODO: Apply policy rules
+    pass
+
+if __name__ == '__main__':
+    print("Running dependency security checks...")
+    
+    # Run checks
+    print("\n[1/2] Checking for known vulnerabilities...")
+    subprocess.run(['safety', 'check', '--json'], check=False)
+    
+    print("\n[2/2] Running pip-audit...")
+    subprocess.run(['pip-audit', '--desc'], check=False)
+    
+    print("\nDependency check complete!")
+EOF
+
+chmod +x check_dependencies.py
+Step 6: Run Initial Security Scan
+# Run the dependency checker
+python3 check_dependencies.py
+
+# Check for outdated packages
+pip list --outdated
+Task 2: Test Dependency Changes
+Step 1: Create Testing Framework
+# Create test directory
+mkdir tests
+cd tests
+
+# Create sample test file
+cat > test_app.py << 'EOF'
+"""
+Test suite for application
+"""
+import pytest
+import sys
+import os
+
+# Add parent directory to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from app import app
+
+@pytest.fixture
+def client():
+    """Create test client"""
+    app.config['TESTING'] = True
+    with app.test_client() as client:
+        yield client
+
+def test_health_check(client):
+    """Test health check endpoint"""
+    # TODO: Implement health check test
+    # TODO: Verify response status and content
+    pass
+
+def test_fetch_data(client):
+    """Test data fetching endpoint"""
+    # TODO: Implement fetch test
+    # TODO: Mock external API calls
+    # TODO: Verify error handling
+    pass
+
+def test_dependency_versions():
+    """Test that dependencies meet version requirements"""
+    # TODO: Check installed package versions
+    # TODO: Verify against policy constraints
+    # TODO: Fail if versions are out of policy
+    pass
+EOF
+
+cd ..
+Step 2: Create Upgrade Testing Script
+cat > test_upgrade.sh << 'EOF'
+#!/bin/bash
+# Safe dependency upgrade testing script
+
+set -e
+
+BACKUP_DIR="backup_$(date +%Y%m%d_%H%M%S)"
+
+echo "=== Dependency Upgrade Testing ==="
+
+# Step 1: Backup current environment
+backup_environment() {
+    echo "[1/6] Backing up current environment..."
+    mkdir -p "$BACKUP_DIR"
+    cp requirements.txt "$BACKUP_DIR/"
+    pip freeze > "$BACKUP_DIR/frozen_requirements.txt"
+    echo "Backup created in $BACKUP_DIR"
+}
+
+# Step 2: Run pre-upgrade tests
+run_pre_tests() {
+    echo "[2/6] Running pre-upgrade tests..."
+    # TODO: Execute full test suite
+    # TODO: Record baseline metrics
+    # TODO: Save test results
+}
+
+# Step 3: Perform upgrade
+perform_upgrade() {
+    echo "[3/6] Performing dependency upgrade..."
+    # TODO: Upgrade specified packages
+    # TODO: Log upgrade details
+    # TODO: Handle upgrade failures
+}
+
+# Step 4: Run post-upgrade tests
+run_post_tests() {
+    echo "[4/6] Running post-upgrade tests..."
+    # TODO: Execute full test suite
+    # TODO: Compare with baseline
+    # TODO: Check for regressions
+}
+
+# Step 5: Security scan
+security_scan() {
+    echo "[5/6] Running security scan..."
+    # TODO: Run vulnerability scanners
+    # TODO: Check for new vulnerabilities
+    # TODO: Verify policy compliance
+}
+
+# Step 6: Rollback if needed
+rollback_if_failed() {
+    if [ $? -ne 0 ]; then
+        echo "[6/6] Tests failed! Rolling back..."
+        # TODO: Restore from backup
+        # TODO: Verify rollback success
+        # TODO: Log rollback reason
+        exit 1
+    else
+        echo "[6/6] All tests passed! Upgrade successful."
+    fi
+}
+
+# Execute workflow
+backup_environment
+run_pre_tests
+# Uncomment to test: perform_upgrade
+run_post_tests
+security_scan
+rollback_if_failed
+
+echo "=== Upgrade testing complete ==="
+EOF
+
+chmod +x test_upgrade.sh
+Step 3: Create Automated Upgrade Workflow
+cat > upgrade_workflow.py << 'EOF'
+#!/usr/bin/env python3
+"""
+Automated dependency upgrade workflow
+"""
+import subprocess
+import json
+from datetime import datetime
+from typing import List, Dict
+
+class DependencyUpgrader:
+    def __init__(self, policy_file: str):
+        """
+        Initialize upgrader with policy configuration
+        
+        Args:
+            policy_file: Path to policy YAML file
+        """
+        # TODO: Load policy configuration
+        # TODO: Initialize logging
+        # TODO: Set up notification handlers
+        pass
+    
+    def check_outdated_packages(self) -> List[Dict]:
+        """
+        Check for outdated packages
+        
+        Returns:
+            List of packages with available updates
+        """
+        # TODO: Run pip list --outdated --format=json
+        # TODO: Parse output
+        # TODO: Categorize by update type
+        pass
+    
+    def classify_update_type(self, current: str, latest: str) -> str:
+        """
+        Classify update as major, minor, or patch
+        
+        Args:
+            current: Current version string
+            latest: Latest version string
+        
+        Returns:
+            Update classification
+        """
+        # TODO: Parse version strings
+        # TODO: Compare version components
+        # TODO: Return 'major', 'minor', or 'patch'
+        pass
+    
+    def apply_policy_rules(self, package: Dict) -> Dict:
+        """
+        Apply policy rules to package update
+        
+        Args:
+            package: Package information dictionary
+        
+        Returns:
+            Updated package dict with policy decisions
+        """
+        # TODO: Check update type against policy
+        # TODO: Determine approval requirements
+        # TODO: Set testing requirements
+        pass
+    
+    def create_upgrade_branch(self, package_name: str) -> str:
+        """
+        Create Git branch for testing upgrade
+        
+        Args:
+            package_name: Name of package being upgraded
+        
+        Returns:
+            Branch name
+        """
+        # TODO: Generate branch name
+        # TODO: Create and checkout branch
+        # TODO: Return branch name
+        pass
+    
+    def run_test_suite(self) -> bool:
+        """
+        Execute complete test suite
+        
+        Returns:
+            True if all tests pass
+        """
+        # TODO: Run pytest with coverage
+        # TODO: Run security scans
+        # TODO: Check policy compliance
+        pass
+    
+    def generate_upgrade_report(self, results: List[Dict]) -> str:
+        """
+        Generate upgrade report
+        
+        Args:
+            results: List of upgrade results
+        
+        Returns:
+            Formatted report string
+        """
+        # TODO: Format results as markdown
+        # TODO: Include test results
+        # TODO: Add recommendations
+        pass
+
+if __name__ == '__main__':
+    upgrader = DependencyUpgrader('dependency-policy.yaml')
+    print("Dependency upgrade workflow initialized")
+    print("Run upgrader.check_outdated_packages() to begin")
+EOF
+
+chmod +x upgrade_workflow.py
+Step 4: Test the Workflow
+# Run basic tests
+cd ~/dependency-lab/python-app
+source venv/bin/activate
+
+# Execute test suite
+pytest tests/ -v
+
+# Run security checks
+python3 check_dependencies.py
+
+# Test upgrade script (dry run)
+./test_upgrade.sh
+Step 5: Create Node.js Example
+# Create Node.js project for comparison
+cd ~/dependency-lab
+mkdir nodejs-app
+cd nodejs-app
+
+# Initialize npm project
+npm init -y
+
+# Create package.json with dependencies
+cat > package.json << 'EOF'
+{
+  "name": "dependency-demo",
+  "version": "1.0.0",
+  "description": "Dependency management demo",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "audit": "npm audit",
+    "outdated": "npm outdated",
+    "update-check": "npm-check-updates"
+  },
+  "dependencies": {
+    "express": "4.18.0",
+    "axios": "1.3.0"
+  },
+  "devDependencies": {
+    "jest": "29.5.0",
+    "npm-check-updates": "16.10.0"
+  }
+}
+EOF
+
+# Install dependencies
+npm install
+
+# Run security audit
+npm audit
+
+# Check for outdated packages
+npm outdated
+Step 6: Create Comparison Report
+cd ~/dependency-lab
+
+cat > generate_report.sh << 'EOF'
+#!/bin/bash
+# Generate dependency management report
+
+echo "# Dependency Management Report" > report.md
+echo "Generated: $(date)" >> report.md
+echo "" >> report.md
+
+echo "## Python Project" >> report.md
+cd python-app
+source venv/bin/activate
+echo "### Installed Packages" >> ../report.md
+pip list >> ../report.md
+echo "" >> ../report.md
+
+echo "### Outdated Packages" >> ../report.md
+pip list --outdated >> ../report.md
+echo "" >> ../report.md
+
+cd ../nodejs-app
+echo "## Node.js Project" >> ../report.md
+echo "### Installed Packages" >> ../report.md
+npm list --depth=0 >> ../report.md
+echo "" >> ../report.md
+
+echo "### Outdated Packages" >> ../report.md
+npm outdated >> ../report.md
+
+cd ..
+echo "Report generated: report.md"
+EOF
+
+chmod +x generate_report.sh
+./generate_report.sh
+Verification
+Verify Task 1: Policy Definition
+cd ~/dependency-lab/python-app
+
+# Check policy file exists
+test -f dependency-policy.yaml && echo "✓ Policy file created"
+
+# Verify security tools installed
+safety --version && echo "✓ Safety installed"
+pip-audit --version && echo "✓ Pip-audit installed"
+
+# Run security scan
+python3 check_dependencies.py
+Verify Task 2: Testing Framework
+# Verify test structure
+test -d tests && echo "✓ Test directory created"
+
+# Run tests
+pytest tests/ -v --tb=short
+
+# Verify upgrade script
+test -x test_upgrade.sh && echo "✓ Upgrade script executable"
+
+# Check report generation
+test -f report.md && echo "✓ Report generated"
+cat report.md
+Expected Outcomes
+You should see:
+
+Policy configuration file with defined rules
+Security scanning tools reporting vulnerabilities (if any)
+Test suite executing successfully
+Upgrade workflow scripts ready for use
+Comparison report showing dependency status
+Troubleshooting Tips
+Issue: Safety or pip-audit not found
+
+Solution: Ensure virtual environment is activated: source venv/bin/activate
+Issue: Tests fail to import app module
+
+Solution: Check PYTHONPATH or run tests from project root
+Issue: npm audit shows vulnerabilities
+
+Solution: Run npm audit fix for automatic fixes, review breaking changes first
+Issue: Permission denied on scripts
+
+Solution: Run chmod +x script_name.sh to make executable
+Conclusion
+You have successfully:
+
+Created a comprehensive dependency policy framework
+Implemented security scanning for Python and Node.js projects
+Built automated testing workflows for safe upgrades
+Established rollback procedures for failed updates
+Generated comparison reports across different ecosystems
+These practices are essential for DevOps engineers managing production systems. Dependency management reduces security risks, prevents breaking changes, and maintains system stability. The policies and scripts you created can be adapted for real-world projects, integrated into CI/CD pipelines, and scaled across multiple applications.
+
+Key Takeaways:
+
+Always test dependency upgrades in isolated environments
+Automate security scanning to catch vulnerabilities early
+Define clear policies for different update types
+Maintain rollback capabilities for quick recovery
+Document and track all dependency changes
