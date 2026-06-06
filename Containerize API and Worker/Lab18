@@ -1,0 +1,353 @@
+Containerize API and Worker
+Prerequisites
+Before starting this lab, you should have:
+
+Basic understanding of Docker concepts (images, containers)
+Familiarity with Python or Node.js
+Knowledge of REST APIs
+Basic Linux command line skills
+Understanding of environment variables
+Learning Objectives
+By completing this lab, you will:
+
+Create production-ready Dockerfiles for API and worker services
+Build Docker images with proper tagging and optimization
+Run containerized services with proper networking and configuration
+Enable consistent deployment across different environments
+Environment Setup
+You will use the Linux machine provided by Al Nafi (accessed via the "Start Lab" button). All tools will be installed during this lab.
+
+Install Required Tools
+# Update package manager
+sudo apt update
+
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Add current user to docker group
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Verify installation
+docker --version
+Task 1: Create Application Services
+Step 1: Set Up Project Structure
+# Create project directory
+mkdir ~/containerize-lab
+cd ~/containerize-lab
+
+# Create directory structure
+mkdir -p api worker shared
+Step 2: Create Shared Configuration
+Create shared/config.py:
+
+import os
+
+class Config:
+    REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+    REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+    API_PORT = int(os.getenv('API_PORT', 5000))
+    
+    @staticmethod
+    def get_redis_url():
+        # TODO: Return formatted Redis connection URL
+        pass
+Step 3: Create API Service
+Create api/app.py:
+
+from flask import Flask, jsonify, request
+import redis
+import json
+import sys
+sys.path.append('/app')
+from shared.config import Config
+
+app = Flask(__name__)
+
+def get_redis_client():
+    # TODO: Create and return Redis client using Config
+    pass
+
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({"status": "healthy"}), 200
+
+@app.route('/task', methods=['POST'])
+def create_task():
+    '''
+    Accept task data and queue it in Redis.
+    Expected JSON: {"task_type": "process", "data": {...}}
+    '''
+    # TODO: Get JSON data from request
+    # TODO: Push task to Redis list 'task_queue'
+    # TODO: Return success response with task_id
+    pass
+
+@app.route('/result/<task_id>', methods=['GET'])
+def get_result(task_id):
+    '''
+    Retrieve task result from Redis.
+    '''
+    # TODO: Get result from Redis key f'result:{task_id}'
+    # TODO: Return result or 404 if not found
+    pass
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=Config.API_PORT)
+Create api/requirements.txt:
+
+flask==3.0.0
+redis==5.0.1
+Step 4: Create Worker Service
+Create worker/worker.py:
+
+import redis
+import json
+import time
+import sys
+sys.path.append('/app')
+from shared.config import Config
+
+def get_redis_client():
+    # TODO: Create and return Redis client using Config
+    pass
+
+def process_task(task_data):
+    '''
+    Process the task based on task_type.
+    Simulate work with time.sleep().
+    '''
+    # TODO: Extract task_type and data from task_data
+    # TODO: Simulate processing (sleep 2-5 seconds)
+    # TODO: Return processed result
+    pass
+
+def main():
+    print("Worker starting...")
+    r = get_redis_client()
+    
+    while True:
+        try:
+            # TODO: Block and pop task from 'task_queue' (BLPOP)
+            # TODO: Process task using process_task()
+            # TODO: Store result in Redis with key f'result:{task_id}'
+            # TODO: Handle exceptions and continue loop
+            pass
+        except KeyboardInterrupt:
+            print("Worker shutting down...")
+            break
+
+if __name__ == '__main__':
+    main()
+Create worker/requirements.txt:
+
+redis==5.0.1
+Task 2: Create Dockerfiles
+Step 1: Create API Dockerfile
+Create api/Dockerfile:
+
+# TODO: Use python:3.11-slim as base image
+
+# TODO: Set working directory to /app
+
+# TODO: Copy requirements.txt and install dependencies
+# Hint: Use --no-cache-dir flag with pip
+
+# TODO: Copy shared directory to /app/shared
+
+# TODO: Copy api/app.py to /app/
+
+# TODO: Expose the API port (5000)
+
+# TODO: Set CMD to run the Flask application
+Step 2: Create Worker Dockerfile
+Create worker/Dockerfile:
+
+# TODO: Use python:3.11-slim as base image
+
+# TODO: Set working directory to /app
+
+# TODO: Copy requirements.txt and install dependencies
+
+# TODO: Copy shared directory to /app/shared
+
+# TODO: Copy worker/worker.py to /app/
+
+# TODO: Set CMD to run the worker script
+Step 3: Create Docker Compose File (Optional Reference)
+Create docker-compose.yml for understanding service relationships:
+
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+Task 3: Build and Run Services
+Step 1: Build Docker Images
+# Build API image
+# TODO: Use docker build command with tag 'task-api:v1'
+# Hint: docker build -t <tag> -f <dockerfile> <context>
+
+# Build Worker image
+# TODO: Use docker build command with tag 'task-worker:v1'
+
+# Verify images
+docker images | grep task-
+Step 2: Create Docker Network
+# TODO: Create a bridge network named 'app-network'
+# Hint: docker network create <network-name>
+
+# Verify network
+docker network ls
+Step 3: Run Redis Container
+# TODO: Run Redis container with:
+# - Name: redis
+# - Network: app-network
+# - Port mapping: 6379:6379
+# - Detached mode
+# Hint: docker run -d --name <name> --network <network> -p <port:port> <image>
+
+# Verify Redis is running
+docker ps | grep redis
+Step 4: Run API Container
+# TODO: Run API container with:
+# - Name: api
+# - Network: app-network
+# - Port mapping: 5000:5000
+# - Environment variables: REDIS_HOST=redis, REDIS_PORT=6379
+# - Detached mode
+# Hint: Use -e flag for environment variables
+
+# Check API logs
+docker logs api
+Step 5: Run Worker Container
+# TODO: Run Worker container with:
+# - Name: worker
+# - Network: app-network
+# - Environment variables: REDIS_HOST=redis, REDIS_PORT=6379
+# - Detached mode
+
+# Check Worker logs
+docker logs worker
+Verification
+Step 1: Verify All Containers Running
+# Check container status
+docker ps
+
+# Expected output: 3 containers (redis, api, worker) with status "Up"
+Step 2: Test API Health Endpoint
+# Test health check
+curl http://localhost:5000/health
+
+# Expected: {"status": "healthy"}
+Step 3: Test Task Submission and Processing
+# Submit a task
+curl -X POST http://localhost:5000/task \
+  -H "Content-Type: application/json" \
+  -d '{"task_type": "process", "data": {"value": 42}}'
+
+# Note the task_id from response
+
+# Wait a few seconds, then check result
+curl http://localhost:5000/result/<task_id>
+Step 4: Inspect Container Networking
+# Inspect network
+docker network inspect app-network
+
+# Verify all three containers are connected
+Step 5: Check Container Logs
+# View API logs
+docker logs api --tail 20
+
+# View Worker logs
+docker logs worker --tail 20
+
+# Look for successful task processing messages
+Troubleshooting Tips
+Container won't start:
+
+Check logs: docker logs <container-name>
+Verify Dockerfile syntax
+Ensure all dependencies are in requirements.txt
+Cannot connect to Redis:
+
+Verify Redis container is running: docker ps
+Check network connectivity: docker network inspect app-network
+Ensure REDIS_HOST environment variable is set correctly
+Port already in use:
+
+Check existing processes: sudo lsof -i :5000
+Stop conflicting containers: docker stop <container-name>
+Use different port mapping: -p 5001:5000
+Image build fails:
+
+Ensure you're in correct directory
+Check file paths in COPY commands
+Verify requirements.txt exists
+Worker not processing tasks:
+
+Check worker logs for errors
+Verify Redis connection
+Test Redis manually: docker exec -it redis redis-cli
+Cleanup
+# Stop all containers
+docker stop api worker redis
+
+# Remove containers
+docker rm api worker redis
+
+# Remove network
+docker network rm app-network
+
+# Optional: Remove images
+docker rmi task-api:v1 task-worker:v1
+Conclusion
+You have successfully:
+
+Created Dockerfiles for API and worker services with proper configuration
+Built Docker images with appropriate tagging for version control
+Deployed multi-container application using Docker networking
+Enabled consistent deployment that can run identically across development, testing, and production environments
+This containerization approach ensures that your services run consistently regardless of the host environment, making deployment predictable and scalable. These skills are fundamental for DevOps engineers working with microservices architectures and cloud-native applications.
+
+Key Takeaways:
+
+Dockerfiles define reproducible build processes
+Docker networks enable container communication
+Environment variables provide runtime configuration
+Multi-container applications require orchestration (manual or via Docker Compose)
