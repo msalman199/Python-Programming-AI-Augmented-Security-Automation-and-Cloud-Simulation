@@ -1,0 +1,583 @@
+Templated Config Generator
+Prerequisites
+Basic Linux command line knowledge
+Understanding of YAML and JSON formats
+Familiarity with Python basics
+Text editor experience (vim, nano, or VS Code)
+Basic understanding of configuration management concepts
+Learning Objectives
+By completing this lab, you will:
+
+Create reusable configuration templates using Jinja2
+Generate standardized configurations from templates
+Validate generated configuration outputs
+Implement a practical config generation workflow for DevOps scenarios
+Environment Setup
+After clicking "Start Lab", you'll have access to a bare-metal Linux machine. Install the required tools:
+
+# Update package manager
+sudo apt update
+
+# Install Python and pip
+sudo apt install -y python3 python3-pip python3-venv
+
+# Create project directory
+mkdir -p ~/config-generator
+cd ~/config-generator
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install required packages
+pip install jinja2 pyyaml jsonschema
+Task 1: Build Template-Based Configuration Generator
+Step 1: Create Project Structure
+cd ~/config-generator
+mkdir -p templates configs data schemas
+touch generator.py validator.py
+Step 2: Create Configuration Templates
+Create a Nginx server template:
+
+cat > templates/nginx.conf.j2 << 'EOF'
+# Nginx Configuration for {{ app_name }}
+# Environment: {{ environment }}
+
+upstream {{ app_name }}_backend {
+    {% for server in backend_servers %}
+    server {{ server.host }}:{{ server.port }} weight={{ server.weight | default(1) }};
+    {% endfor %}
+}
+
+server {
+    listen {{ listen_port }};
+    server_name {{ server_name }};
+    
+    {% if ssl_enabled %}
+    ssl_certificate {{ ssl_cert_path }};
+    ssl_certificate_key {{ ssl_key_path }};
+    {% endif %}
+    
+    location / {
+        proxy_pass http://{{ app_name }}_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        {% if custom_headers %}
+        {% for header, value in custom_headers.items() %}
+        proxy_set_header {{ header }} {{ value }};
+        {% endfor %}
+        {% endif %}
+    }
+    
+    access_log /var/log/nginx/{{ app_name }}_access.log;
+    error_log /var/log/nginx/{{ app_name }}_error.log;
+}
+EOF
+Create an application configuration template:
+
+cat > templates/app_config.yaml.j2 << 'EOF'
+# Application Configuration
+application:
+  name: {{ app_name }}
+  environment: {{ environment }}
+  version: {{ version }}
+
+database:
+  host: {{ db_host }}
+  port: {{ db_port }}
+  name: {{ db_name }}
+  pool_size: {{ db_pool_size | default(10) }}
+  {% if environment == 'production' %}
+  ssl_mode: require
+  {% else %}
+  ssl_mode: prefer
+  {% endif %}
+
+cache:
+  enabled: {{ cache_enabled | default(true) }}
+  {% if cache_enabled %}
+  type: {{ cache_type | default('redis') }}
+  host: {{ cache_host }}
+  port: {{ cache_port | default(6379) }}
+  ttl: {{ cache_ttl | default(3600) }}
+  {% endif %}
+
+logging:
+  level: {{ log_level | default('INFO') }}
+  format: {{ log_format | default('json') }}
+  outputs:
+    {% for output in log_outputs %}
+    - {{ output }}
+    {% endfor %}
+EOF
+Step 3: Create Sample Data Files
+Create development environment data:
+
+cat > data/dev_config.yaml << 'EOF'
+app_name: myapp
+environment: development
+version: 1.0.0
+listen_port: 8080
+server_name: dev.myapp.local
+ssl_enabled: false
+
+backend_servers:
+  - host: 127.0.0.1
+    port: 3000
+    weight: 1
+
+db_host: localhost
+db_port: 5432
+db_name: myapp_dev
+db_pool_size: 5
+
+cache_enabled: true
+cache_host: localhost
+cache_port: 6379
+cache_ttl: 1800
+
+log_level: DEBUG
+log_outputs:
+  - console
+  - file
+EOF
+Create production environment data:
+
+cat > data/prod_config.yaml << 'EOF'
+app_name: myapp
+environment: production
+version: 1.0.0
+listen_port: 443
+server_name: myapp.com
+ssl_enabled: true
+ssl_cert_path: /etc/ssl/certs/myapp.crt
+ssl_key_path: /etc/ssl/private/myapp.key
+
+backend_servers:
+  - host: 10.0.1.10
+    port: 3000
+    weight: 2
+  - host: 10.0.1.11
+    port: 3000
+    weight: 2
+  - host: 10.0.1.12
+    port: 3000
+    weight: 1
+
+custom_headers:
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+
+db_host: db.internal.myapp.com
+db_port: 5432
+db_name: myapp_prod
+db_pool_size: 20
+
+cache_enabled: true
+cache_type: redis
+cache_host: cache.internal.myapp.com
+cache_port: 6379
+cache_ttl: 3600
+
+log_level: INFO
+log_format: json
+log_outputs:
+  - file
+  - syslog
+EOF
+Step 4: Implement Configuration Generator
+Create the generator script with partial implementation:
+
+cat > generator.py << 'EOF'
+#!/usr/bin/env python3
+"""
+Configuration Generator using Jinja2 Templates
+"""
+
+import os
+import sys
+import yaml
+from jinja2 import Environment, FileSystemLoader, TemplateNotFound
+from pathlib import Path
+
+
+class ConfigGenerator:
+    """Generate configurations from Jinja2 templates and YAML data."""
+    
+    def __init__(self, template_dir='templates', output_dir='configs'):
+        """
+        Initialize the configuration generator.
+        
+        Args:
+            template_dir: Directory containing Jinja2 templates
+            output_dir: Directory for generated configurations
+        """
+        self.template_dir = template_dir
+        self.output_dir = output_dir
+        
+        # TODO: Initialize Jinja2 environment with FileSystemLoader
+        # Hint: Use trim_blocks=True and lstrip_blocks=True for cleaner output
+        self.env = None
+        
+        # Create output directory if it doesn't exist
+        Path(self.output_dir).mkdir(parents=True, exist_ok=True)
+    
+    def load_data(self, data_file):
+        """
+        Load configuration data from YAML file.
+        
+        Args:
+            data_file: Path to YAML data file
+            
+        Returns:
+            Dictionary containing configuration data
+        """
+        # TODO: Implement YAML file loading
+        # TODO: Add error handling for file not found and YAML parsing errors
+        pass
+    
+    def generate_config(self, template_name, data, output_file=None):
+        """
+        Generate configuration from template and data.
+        
+        Args:
+            template_name: Name of the template file
+            data: Dictionary containing template variables
+            output_file: Optional output filename (defaults to template name without .j2)
+            
+        Returns:
+            Generated configuration as string
+        """
+        # TODO: Load the template using self.env.get_template()
+        # TODO: Render the template with provided data
+        # TODO: If output_file is provided, write to file in output_dir
+        # TODO: Return the rendered configuration
+        pass
+    
+    def generate_all(self, data_file, template_list=None):
+        """
+        Generate multiple configurations from a data file.
+        
+        Args:
+            data_file: Path to YAML data file
+            template_list: List of template names (None = all templates)
+        """
+        # TODO: Load data from data_file
+        # TODO: If template_list is None, get all .j2 files from template_dir
+        # TODO: Generate config for each template
+        # TODO: Print summary of generated files
+        pass
+
+
+def main():
+    """Main execution function."""
+    if len(sys.argv) < 2:
+        print("Usage: python3 generator.py <data_file> [template1 template2 ...]")
+        print("Example: python3 generator.py data/dev_config.yaml")
+        sys.exit(1)
+    
+    data_file = sys.argv[1]
+    templates = sys.argv[2:] if len(sys.argv) > 2 else None
+    
+    generator = ConfigGenerator()
+    generator.generate_all(data_file, templates)
+
+
+if __name__ == '__main__':
+    main()
+EOF
+
+chmod +x generator.py
+Step 5: Create Validation Schema
+cat > schemas/app_config_schema.json << 'EOF'
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["application", "database", "logging"],
+  "properties": {
+    "application": {
+      "type": "object",
+      "required": ["name", "environment", "version"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "environment": {"type": "string", "enum": ["development", "staging", "production"]},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"}
+      }
+    },
+    "database": {
+      "type": "object",
+      "required": ["host", "port", "name"],
+      "properties": {
+        "host": {"type": "string"},
+        "port": {"type": "integer", "minimum": 1, "maximum": 65535},
+        "name": {"type": "string"},
+        "pool_size": {"type": "integer", "minimum": 1}
+      }
+    },
+    "logging": {
+      "type": "object",
+      "required": ["level", "outputs"],
+      "properties": {
+        "level": {"type": "string", "enum": ["DEBUG", "INFO", "WARNING", "ERROR"]},
+        "format": {"type": "string"},
+        "outputs": {
+          "type": "array",
+          "items": {"type": "string"},
+          "minItems": 1
+        }
+      }
+    }
+  }
+}
+EOF
+Step 6: Implement Configuration Validator
+cat > validator.py << 'EOF'
+#!/usr/bin/env python3
+"""
+Configuration Validator using JSON Schema
+"""
+
+import sys
+import yaml
+import json
+from jsonschema import validate, ValidationError, SchemaError
+from pathlib import Path
+
+
+class ConfigValidator:
+    """Validate generated configurations against schemas."""
+    
+    def __init__(self, schema_dir='schemas'):
+        """
+        Initialize the validator.
+        
+        Args:
+            schema_dir: Directory containing JSON schemas
+        """
+        self.schema_dir = schema_dir
+        self.schemas = {}
+    
+    def load_schema(self, schema_name):
+        """
+        Load a JSON schema file.
+        
+        Args:
+            schema_name: Name of the schema file
+            
+        Returns:
+            Dictionary containing the schema
+        """
+        # TODO: Construct full path to schema file
+        # TODO: Load and parse JSON schema
+        # TODO: Cache schema in self.schemas dictionary
+        # TODO: Return the schema
+        pass
+    
+    def validate_yaml_config(self, config_file, schema_name):
+        """
+        Validate a YAML configuration file against a schema.
+        
+        Args:
+            config_file: Path to YAML configuration file
+            schema_name: Name of the schema to validate against
+            
+        Returns:
+            Tuple (is_valid: bool, errors: list)
+        """
+        # TODO: Load the configuration file as YAML
+        # TODO: Load the schema (use load_schema method)
+        # TODO: Validate config against schema using jsonschema.validate()
+        # TODO: Return (True, []) if valid, (False, [error_messages]) if invalid
+        pass
+    
+    def validate_nginx_config(self, config_file):
+        """
+        Perform basic syntax validation on Nginx config.
+        
+        Args:
+            config_file: Path to Nginx configuration file
+            
+        Returns:
+            Tuple (is_valid: bool, message: str)
+        """
+        # TODO: Read the config file
+        # TODO: Check for basic Nginx syntax requirements:
+        #       - Balanced curly braces
+        #       - Each directive ends with semicolon (except blocks)
+        #       - Contains 'server' block
+        # TODO: Return validation result
+        pass
+
+
+def main():
+    """Main execution function."""
+    if len(sys.argv) < 3:
+        print("Usage: python3 validator.py <config_file> <schema_name>")
+        print("Example: python3 validator.py configs/app_config.yaml app_config_schema.json")
+        sys.exit(1)
+    
+    config_file = sys.argv[1]
+    schema_name = sys.argv[2]
+    
+    validator = ConfigValidator()
+    
+    # TODO: Implement validation logic
+    # TODO: Print validation results
+    pass
+
+
+if __name__ == '__main__':
+    main()
+EOF
+
+chmod +x validator.py
+Task 2: Test and Validate Configuration Generation
+Step 1: Complete the Generator Implementation
+Open generator.py and implement the TODO sections:
+
+Hints for implementation:
+
+Initialize Jinja2 Environment: Environment(loader=FileSystemLoader(self.template_dir), trim_blocks=True, lstrip_blocks=True)
+Load YAML: Use yaml.safe_load() with file handle
+Render template: template.render(**data)
+List templates: Use os.listdir() and filter for .j2 extension
+Step 2: Complete the Validator Implementation
+Open validator.py and implement the TODO sections:
+
+Hints for implementation:
+
+Load JSON schema: Use json.load() with file handle
+Validate: Use jsonschema.validate(instance, schema) in try-except block
+Check Nginx syntax: Count { and }, verify they match
+Look for required Nginx keywords: server, location
+Step 3: Generate Development Configurations
+# Generate all configs for development
+python3 generator.py data/dev_config.yaml
+
+# Verify generated files
+ls -lh configs/
+
+# View generated Nginx config
+cat configs/nginx.conf
+
+# View generated app config
+cat configs/app_config.yaml
+Step 4: Generate Production Configurations
+# Generate production configs
+python3 generator.py data/prod_config.yaml
+
+# Compare dev vs prod configurations
+diff configs/nginx.conf <(python3 generator.py data/dev_config.yaml nginx.conf.j2 2>/dev/null && cat configs/nginx.conf)
+Step 5: Validate Generated Configurations
+# Validate app configuration against schema
+python3 validator.py configs/app_config.yaml app_config_schema.json
+
+# Validate Nginx configuration syntax
+python3 validator.py configs/nginx.conf nginx
+Step 6: Test Edge Cases
+Create a test configuration with missing required fields:
+
+cat > data/invalid_config.yaml << 'EOF'
+app_name: testapp
+environment: development
+# Missing version field
+
+db_host: localhost
+db_port: 5432
+EOF
+
+# Try to generate and validate
+python3 generator.py data/invalid_config.yaml app_config.yaml.j2
+python3 validator.py configs/app_config.yaml app_config_schema.json
+Verification
+Verify Generator Functionality
+# Check all generated files exist
+test -f configs/nginx.conf && echo "Nginx config: OK" || echo "Nginx config: MISSING"
+test -f configs/app_config.yaml && echo "App config: OK" || echo "App config: MISSING"
+
+# Verify configs contain expected values
+grep "myapp" configs/nginx.conf && echo "App name found: OK"
+grep "environment: production" configs/app_config.yaml && echo "Environment set: OK"
+Verify Validator Functionality
+# Test validator with valid config
+python3 validator.py configs/app_config.yaml app_config_schema.json
+echo "Exit code: $?"  # Should be 0 for valid config
+
+# Verify Nginx config structure
+grep -c "server {" configs/nginx.conf  # Should be 1
+grep -c "location" configs/nginx.conf  # Should be at least 1
+Create Verification Script
+cat > verify_lab.sh << 'EOF'
+#!/bin/bash
+echo "=== Lab 16 Verification ==="
+echo ""
+
+# Check generator
+if python3 -c "from generator import ConfigGenerator; print('OK')" 2>/dev/null; then
+    echo "[PASS] Generator module loads"
+else
+    echo "[FAIL] Generator module has errors"
+fi
+
+# Check validator
+if python3 -c "from validator import ConfigValidator; print('OK')" 2>/dev/null; then
+    echo "[PASS] Validator module loads"
+else
+    echo "[FAIL] Validator module has errors"
+fi
+
+# Check generated files
+if [ -f configs/nginx.conf ] && [ -f configs/app_config.yaml ]; then
+    echo "[PASS] Configuration files generated"
+else
+    echo "[FAIL] Missing configuration files"
+fi
+
+# Check file content
+if grep -q "upstream.*backend" configs/nginx.conf; then
+    echo "[PASS] Nginx config contains upstream block"
+else
+    echo "[FAIL] Nginx config missing upstream block"
+fi
+
+echo ""
+echo "=== Verification Complete ==="
+EOF
+
+chmod +x verify_lab.sh
+./verify_lab.sh
+Troubleshooting
+Issue: Jinja2 template not found
+
+Verify template files are in templates/ directory
+Check file extensions are .j2
+Ensure FileSystemLoader points to correct directory
+Issue: YAML parsing errors
+
+Validate YAML syntax using: python3 -c "import yaml; yaml.safe_load(open('data/dev_config.yaml'))"
+Check indentation (use spaces, not tabs)
+Ensure colons have space after them
+Issue: Validation fails unexpectedly
+
+Print the loaded config to debug: print(yaml.safe_load(open('configs/app_config.yaml')))
+Verify schema path is correct
+Check that generated YAML is valid
+Issue: Generated config has extra whitespace
+
+Ensure Jinja2 Environment uses trim_blocks=True and lstrip_blocks=True
+Use {%- and -%} in templates to strip whitespace
+Conclusion
+You have successfully built a templated configuration generator system that:
+
+Creates standardized configurations from reusable Jinja2 templates
+Generates environment-specific configs (dev, prod) from data files
+Validates generated configurations against JSON schemas
+Implements a practical DevOps workflow for configuration management
+This approach is widely used in DevOps for managing infrastructure as code, ensuring consistency across environments, and reducing configuration errors. The skills you've learned apply directly to tools like Ansible, Helm charts, and Terraform templates.
+
+Key Takeaways:
+
+Template-based generation ensures consistency and reduces manual errors
+Schema validation catches configuration issues before deployment
+Separation of templates and data enables easy environment management
+This pattern scales from simple configs to complex infrastructure definitions
