@@ -1,0 +1,472 @@
+CI Failure Triage Assistant
+Prerequisites
+Basic Linux command line knowledge
+Understanding of Git and version control
+Familiarity with CI/CD concepts
+Basic Python programming skills
+Experience reading log files
+Learning Objectives
+By completing this lab, you will:
+
+Build an automated CI log analysis tool
+Implement pattern matching for common build failures
+Create a triage system that suggests likely root causes
+Speed up build failure diagnosis using automation
+Environment Setup
+Install Required Tools
+# Update system packages
+sudo apt update
+
+# Install Python and pip
+sudo apt install -y python3 python3-pip git
+
+# Install required Python libraries
+pip3 install pyyaml colorama
+Create Project Structure
+# Create working directory
+mkdir -p ~/ci-triage-lab
+cd ~/ci-triage-lab
+
+# Create subdirectories
+mkdir -p logs patterns output
+Task 1: Build the CI Log Analyzer
+Step 1: Create Sample CI Logs
+Create realistic CI failure logs for testing:
+
+cat > logs/build_failure_1.log << 'EOF'
+[2024-01-15 10:23:45] INFO: Starting build process
+[2024-01-15 10:23:46] INFO: Checking out repository
+[2024-01-15 10:23:50] INFO: Installing dependencies
+[2024-01-15 10:24:15] ERROR: npm ERR! code ENOTFOUND
+[2024-01-15 10:24:15] ERROR: npm ERR! network request to https://registry.npmjs.org/express failed
+[2024-01-15 10:24:15] ERROR: npm ERR! network This is a problem related to network connectivity
+[2024-01-15 10:24:15] FATAL: Build failed with exit code 1
+EOF
+
+cat > logs/test_failure_2.log << 'EOF'
+[2024-01-15 11:15:30] INFO: Running test suite
+[2024-01-15 11:15:35] INFO: Test: user_authentication_test
+[2024-01-15 11:15:36] PASS: test_valid_login
+[2024-01-15 11:15:37] FAIL: test_invalid_password
+[2024-01-15 11:15:37] ERROR: AssertionError: Expected status code 401, got 500
+[2024-01-15 11:15:37] ERROR: at UserAuthTest.test_invalid_password (auth_test.py:45)
+[2024-01-15 11:15:38] INFO: Tests completed: 1 passed, 1 failed
+EOF
+
+cat > logs/compile_error_3.log << 'EOF'
+[2024-01-15 14:20:10] INFO: Compiling Java sources
+[2024-01-15 14:20:15] ERROR: src/main/java/com/example/Service.java:23: error: cannot find symbol
+[2024-01-15 14:20:15] ERROR:   symbol:   class DatabaseConnection
+[2024-01-15 14:20:15] ERROR:   location: class Service
+[2024-01-15 14:20:15] ERROR: 1 error
+[2024-01-15 14:20:15] FATAL: Compilation failed
+EOF
+Step 2: Create Failure Pattern Database
+Create a YAML file defining common failure patterns:
+
+cat > patterns/failure_patterns.yaml << 'EOF'
+patterns:
+  - name: "Network/Dependency Download Failure"
+    keywords:
+      - "ENOTFOUND"
+      - "network request"
+      - "failed to fetch"
+      - "connection timeout"
+    severity: "high"
+    suggestions:
+      - "Check network connectivity and firewall rules"
+      - "Verify package registry is accessible"
+      - "Review proxy settings if applicable"
+      - "Check for rate limiting or authentication issues"
+    
+  - name: "Test Assertion Failure"
+    keywords:
+      - "AssertionError"
+      - "FAIL:"
+      - "test_"
+      - "Expected"
+    severity: "medium"
+    suggestions:
+      - "Review recent code changes affecting the failing test"
+      - "Check if test data or fixtures have changed"
+      - "Verify environment-specific configurations"
+      - "Run test locally to reproduce the issue"
+    
+  - name: "Compilation Error"
+    keywords:
+      - "cannot find symbol"
+      - "Compilation failed"
+      - "error:"
+      - "undefined reference"
+    severity: "high"
+    suggestions:
+      - "Check for missing imports or dependencies"
+      - "Verify all required libraries are included"
+      - "Review recent code changes for syntax errors"
+      - "Ensure build configuration is correct"
+    
+  - name: "Memory/Resource Exhaustion"
+    keywords:
+      - "OutOfMemoryError"
+      - "killed"
+      - "resource exhausted"
+      - "heap space"
+    severity: "critical"
+    suggestions:
+      - "Increase memory allocation for build process"
+      - "Check for memory leaks in tests"
+      - "Review resource-intensive operations"
+      - "Consider splitting large build jobs"
+EOF
+Step 3: Implement the Log Analyzer
+Create the main analyzer script with partial implementation:
+
+cat > ci_triage.py << 'EOF'
+#!/usr/bin/env python3
+"""
+CI Failure Triage Assistant
+Analyzes CI logs and suggests likely causes of failures
+"""
+
+import sys
+import yaml
+import re
+from pathlib import Path
+from colorama import Fore, Style, init
+
+# Initialize colorama for colored output
+init(autoreset=True)
+
+class CITriageAssistant:
+    def __init__(self, patterns_file):
+        """
+        Initialize the triage assistant with failure patterns.
+        
+        Args:
+            patterns_file: Path to YAML file containing failure patterns
+        """
+        self.patterns = self._load_patterns(patterns_file)
+        self.log_content = ""
+        self.matches = []
+    
+    def _load_patterns(self, patterns_file):
+        """
+        Load failure patterns from YAML file.
+        
+        Args:
+            patterns_file: Path to patterns YAML file
+            
+        Returns:
+            List of pattern dictionaries
+        """
+        # TODO: Implement YAML loading
+        # TODO: Return the patterns list from the loaded data
+        with open(patterns_file, 'r') as f:
+            data = yaml.safe_load(f)
+            return data.get('patterns', [])
+    
+    def analyze_log(self, log_file):
+        """
+        Analyze a CI log file for known failure patterns.
+        
+        Args:
+            log_file: Path to the log file to analyze
+            
+        Returns:
+            List of matched patterns with scores
+        """
+        # TODO: Read the log file content
+        # TODO: Search for each pattern's keywords in the log
+        # TODO: Calculate match scores based on keyword frequency
+        # TODO: Return sorted list of matches
+        
+        with open(log_file, 'r') as f:
+            self.log_content = f.read().lower()
+        
+        self.matches = []
+        
+        for pattern in self.patterns:
+            match_count = 0
+            matched_keywords = []
+            
+            # Count keyword matches
+            for keyword in pattern['keywords']:
+                count = self.log_content.count(keyword.lower())
+                if count > 0:
+                    match_count += count
+                    matched_keywords.append(keyword)
+            
+            if match_count > 0:
+                self.matches.append({
+                    'pattern': pattern,
+                    'score': match_count,
+                    'matched_keywords': matched_keywords
+                })
+        
+        # Sort by score (highest first)
+        self.matches.sort(key=lambda x: x['score'], reverse=True)
+        return self.matches
+    
+    def extract_error_lines(self, log_file, context_lines=2):
+        """
+        Extract error lines with surrounding context from log.
+        
+        Args:
+            log_file: Path to log file
+            context_lines: Number of lines before/after error to include
+            
+        Returns:
+            List of error snippets with context
+        """
+        # TODO: Read log file line by line
+        # TODO: Find lines containing ERROR or FATAL
+        # TODO: Extract context lines around errors
+        # TODO: Return list of error snippets
+        
+        error_snippets = []
+        with open(log_file, 'r') as f:
+            lines = f.readlines()
+        
+        for i, line in enumerate(lines):
+            if 'ERROR' in line or 'FATAL' in line:
+                start = max(0, i - context_lines)
+                end = min(len(lines), i + context_lines + 1)
+                snippet = ''.join(lines[start:end])
+                error_snippets.append(snippet)
+        
+        return error_snippets
+    
+    def generate_report(self, log_file):
+        """
+        Generate a comprehensive triage report.
+        
+        Args:
+            log_file: Path to the log file analyzed
+        """
+        print(f"\n{Fore.CYAN}{'='*70}")
+        print(f"{Fore.CYAN}CI FAILURE TRIAGE REPORT")
+        print(f"{Fore.CYAN}{'='*70}\n")
+        
+        print(f"{Fore.YELLOW}Log File: {Fore.WHITE}{log_file}\n")
+        
+        if not self.matches:
+            print(f"{Fore.RED}No known failure patterns detected.")
+            print(f"{Fore.YELLOW}Manual investigation required.\n")
+            return
+        
+        # Display matched patterns
+        print(f"{Fore.GREEN}Detected Failure Patterns:\n")
+        
+        for idx, match in enumerate(self.matches, 1):
+            pattern = match['pattern']
+            severity_color = self._get_severity_color(pattern['severity'])
+            
+            print(f"{Fore.WHITE}{idx}. {Fore.CYAN}{pattern['name']}")
+            print(f"   {Fore.WHITE}Severity: {severity_color}{pattern['severity'].upper()}")
+            print(f"   {Fore.WHITE}Confidence Score: {Fore.YELLOW}{match['score']}")
+            print(f"   {Fore.WHITE}Matched Keywords: {Fore.MAGENTA}{', '.join(match['matched_keywords'])}\n")
+            
+            print(f"   {Fore.GREEN}Suggested Actions:")
+            for suggestion in pattern['suggestions']:
+                print(f"   {Fore.WHITE}- {suggestion}")
+            print()
+        
+        # Display error context
+        print(f"{Fore.YELLOW}Error Context from Log:\n")
+        error_snippets = self.extract_error_lines(log_file)
+        
+        for snippet in error_snippets[:3]:  # Show first 3 error contexts
+            print(f"{Fore.RED}{snippet}")
+            print(f"{Fore.WHITE}{'-'*70}\n")
+    
+    def _get_severity_color(self, severity):
+        """Return appropriate color for severity level."""
+        colors = {
+            'critical': Fore.RED,
+            'high': Fore.RED,
+            'medium': Fore.YELLOW,
+            'low': Fore.GREEN
+        }
+        return colors.get(severity.lower(), Fore.WHITE)
+
+def main():
+    """Main execution function."""
+    if len(sys.argv) < 2:
+        print(f"{Fore.RED}Usage: python3 ci_triage.py <log_file>")
+        sys.exit(1)
+    
+    log_file = sys.argv[1]
+    patterns_file = "patterns/failure_patterns.yaml"
+    
+    if not Path(log_file).exists():
+        print(f"{Fore.RED}Error: Log file not found: {log_file}")
+        sys.exit(1)
+    
+    # TODO: Create CITriageAssistant instance
+    # TODO: Analyze the log file
+    # TODO: Generate and display the report
+    
+    assistant = CITriageAssistant(patterns_file)
+    assistant.analyze_log(log_file)
+    assistant.generate_report(log_file)
+
+if __name__ == "__main__":
+    main()
+EOF
+
+chmod +x ci_triage.py
+Step 4: Test the Analyzer
+Run the triage assistant on sample logs:
+
+# Analyze each sample log
+python3 ci_triage.py logs/build_failure_1.log
+python3 ci_triage.py logs/test_failure_2.log
+python3 ci_triage.py logs/compile_error_3.log
+Task 2: Enhance with Batch Analysis
+Step 1: Create Batch Analysis Script
+cat > batch_triage.py << 'EOF'
+#!/usr/bin/env python3
+"""
+Batch CI Log Analyzer
+Processes multiple log files and generates summary report
+"""
+
+import sys
+from pathlib import Path
+from ci_triage import CITriageAssistant
+from colorama import Fore, init
+
+init(autoreset=True)
+
+def analyze_directory(log_dir, patterns_file):
+    """
+    Analyze all log files in a directory.
+    
+    Args:
+        log_dir: Directory containing log files
+        patterns_file: Path to patterns YAML file
+    """
+    # TODO: Get all .log files from directory
+    # TODO: Analyze each log file
+    # TODO: Collect and summarize results
+    
+    log_files = list(Path(log_dir).glob("*.log"))
+    
+    if not log_files:
+        print(f"{Fore.RED}No log files found in {log_dir}")
+        return
+    
+    print(f"{Fore.CYAN}Analyzing {len(log_files)} log files...\n")
+    
+    assistant = CITriageAssistant(patterns_file)
+    results = []
+    
+    for log_file in log_files:
+        matches = assistant.analyze_log(str(log_file))
+        results.append({
+            'file': log_file.name,
+            'matches': matches
+        })
+    
+    # Generate summary
+    print(f"{Fore.CYAN}{'='*70}")
+    print(f"{Fore.CYAN}BATCH ANALYSIS SUMMARY")
+    print(f"{Fore.CYAN}{'='*70}\n")
+    
+    for result in results:
+        print(f"{Fore.YELLOW}{result['file']}")
+        if result['matches']:
+            top_match = result['matches'][0]
+            print(f"  {Fore.GREEN}Top Issue: {top_match['pattern']['name']}")
+            print(f"  {Fore.WHITE}Severity: {top_match['pattern']['severity']}\n")
+        else:
+            print(f"  {Fore.RED}No patterns detected\n")
+
+if __name__ == "__main__":
+    log_dir = sys.argv[1] if len(sys.argv) > 1 else "logs"
+    patterns_file = "patterns/failure_patterns.yaml"
+    analyze_directory(log_dir, patterns_file)
+EOF
+
+chmod +x batch_triage.py
+Step 2: Run Batch Analysis
+# Analyze all logs in the directory
+python3 batch_triage.py logs
+Step 3: Create Custom Pattern
+Add your own failure pattern to the patterns file:
+
+# Edit the patterns file to add a new pattern
+cat >> patterns/failure_patterns.yaml << 'EOF'
+  
+  - name: "Docker Build Failure"
+    keywords:
+      - "docker"
+      - "image not found"
+      - "pull access denied"
+      - "manifest unknown"
+    severity: "high"
+    suggestions:
+      - "Verify Docker registry credentials"
+      - "Check image name and tag spelling"
+      - "Ensure Docker daemon is running"
+      - "Review Docker registry permissions"
+EOF
+Create a test log for the new pattern:
+
+cat > logs/docker_failure_4.log << 'EOF'
+[2024-01-15 16:30:00] INFO: Building Docker image
+[2024-01-15 16:30:05] ERROR: Error response from daemon: pull access denied for myapp/backend
+[2024-01-15 16:30:05] ERROR: repository does not exist or may require 'docker login'
+[2024-01-15 16:30:05] FATAL: Docker build failed
+EOF
+
+# Test the new pattern
+python3 ci_triage.py logs/docker_failure_4.log
+Verification
+Verify Core Functionality
+# Test 1: Single log analysis produces output
+python3 ci_triage.py logs/build_failure_1.log | grep -q "TRIAGE REPORT" && echo "PASS: Report generated" || echo "FAIL"
+
+# Test 2: Pattern matching works
+python3 ci_triage.py logs/test_failure_2.log | grep -q "Test Assertion Failure" && echo "PASS: Pattern detected" || echo "FAIL"
+
+# Test 3: Batch analysis works
+python3 batch_triage.py logs | grep -q "BATCH ANALYSIS" && echo "PASS: Batch mode works" || echo "FAIL"
+
+# Test 4: Custom pattern detected
+python3 ci_triage.py logs/docker_failure_4.log | grep -q "Docker Build Failure" && echo "PASS: Custom pattern works" || echo "FAIL"
+Expected Outputs
+Colored, formatted triage reports for each log
+Identified failure patterns with confidence scores
+Actionable suggestions for each detected issue
+Error context extracted from logs
+Batch summary showing all analyzed files
+Troubleshooting
+Issue: ModuleNotFoundError for yaml or colorama
+
+Solution: Run pip3 install pyyaml colorama --user
+Issue: No patterns detected in logs
+
+Solution: Check that keywords in patterns.yaml match log content (case-insensitive)
+Issue: Permission denied when running scripts
+
+Solution: Ensure scripts are executable: chmod +x *.py
+Issue: Colors not displaying correctly
+
+Solution: Colorama should handle this, but try: export TERM=xterm-256color
+Conclusion
+You have successfully built a CI Failure Triage Assistant that:
+
+Automatically analyzes CI/CD build logs
+Matches failures against known patterns
+Provides actionable suggestions for resolution
+Processes multiple logs in batch mode
+Reduces time spent diagnosing build failures
+This tool demonstrates practical DevOps automation, helping teams quickly identify and resolve CI/CD issues. The pattern-based approach can be extended with machine learning or integrated into CI/CD pipelines for real-time failure analysis.
+
+Key Skills Demonstrated:
+
+Log parsing and pattern matching
+YAML configuration management
+Python automation scripting
+DevOps troubleshooting workflows
