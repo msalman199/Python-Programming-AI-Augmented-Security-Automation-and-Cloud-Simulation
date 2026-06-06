@@ -1,0 +1,423 @@
+AI Test Suggestion Pipeline
+Prerequisites
+Basic understanding of Python programming
+Familiarity with Git and version control concepts
+Basic knowledge of unit testing principles
+Experience with command-line operations in Linux
+Understanding of REST APIs and JSON
+Learning Objectives
+By completing this lab, you will:
+
+Build an AI-powered pipeline to analyze code changes
+Generate intelligent test suggestions based on code modifications
+Integrate OpenAI-compatible APIs for test coverage analysis
+Implement automated test gap detection in a CI/CD workflow
+Environment Setup
+You'll be working on a bare-metal Linux machine provided by Al Nafi. Install the required tools:
+
+# Update system packages
+sudo apt update
+
+# Install Python 3 and pip
+sudo apt install -y python3 python3-pip python3-venv git
+
+# Create project directory
+mkdir -p ~/ai-test-pipeline
+cd ~/ai-test-pipeline
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install required packages
+pip install openai gitpython ast-parser
+Task 1: Build Code Change Analyzer
+Step 1: Create Project Structure
+cd ~/ai-test-pipeline
+mkdir -p src tests sample_project
+touch src/code_analyzer.py src/test_suggester.py src/pipeline.py
+Step 2: Implement Code Analyzer
+Create src/code_analyzer.py:
+
+import ast
+import os
+from typing import List, Dict
+from git import Repo
+
+class CodeAnalyzer:
+    """Analyzes code changes and extracts relevant information for test suggestions."""
+    
+    def __init__(self, repo_path: str):
+        """
+        Initialize the code analyzer.
+        
+        Args:
+            repo_path: Path to the git repository
+        """
+        self.repo_path = repo_path
+        self.repo = None
+        # TODO: Initialize git repository object
+    
+    def get_changed_files(self, commit_range: str = "HEAD~1..HEAD") -> List[str]:
+        """
+        Get list of changed Python files in the commit range.
+        
+        Args:
+            commit_range: Git commit range to analyze
+            
+        Returns:
+            List of changed Python file paths
+        """
+        # TODO: Use git diff to get changed files
+        # TODO: Filter only .py files
+        # TODO: Return list of file paths
+        pass
+    
+    def extract_functions(self, file_path: str) -> List[Dict]:
+        """
+        Extract function definitions from a Python file.
+        
+        Args:
+            file_path: Path to Python file
+            
+        Returns:
+            List of dictionaries containing function metadata
+        """
+        # TODO: Read file content
+        # TODO: Parse with ast module
+        # TODO: Extract function names, parameters, and docstrings
+        # TODO: Return structured data
+        pass
+    
+    def analyze_complexity(self, function_node: ast.FunctionDef) -> Dict:
+        """
+        Analyze function complexity metrics.
+        
+        Args:
+            function_node: AST node of the function
+            
+        Returns:
+            Dictionary with complexity metrics
+        """
+        # TODO: Count branches (if/else statements)
+        # TODO: Count loops
+        # TODO: Calculate cyclomatic complexity estimate
+        pass
+Step 3: Create Sample Project for Testing
+Create a sample Python module at sample_project/calculator.py:
+
+def add(a, b):
+    """Add two numbers."""
+    return a + b
+
+def divide(a, b):
+    """Divide two numbers with error handling."""
+    if b == 0:
+        raise ValueError("Cannot divide by zero")
+    return a / b
+
+def calculate_discount(price, discount_percent):
+    """Calculate discounted price with validation."""
+    if price < 0 or discount_percent < 0 or discount_percent > 100:
+        raise ValueError("Invalid input")
+    discount_amount = price * (discount_percent / 100)
+    return price - discount_amount
+Initialize git repository:
+
+cd ~/ai-test-pipeline/sample_project
+git init
+git add calculator.py
+git commit -m "Initial calculator implementation"
+Step 4: Test Code Analyzer
+Create tests/test_analyzer.py:
+
+import sys
+sys.path.insert(0, '../src')
+
+from code_analyzer import CodeAnalyzer
+
+def test_analyzer():
+    analyzer = CodeAnalyzer('../sample_project')
+    
+    # Test function extraction
+    functions = analyzer.extract_functions('../sample_project/calculator.py')
+    print(f"Found {len(functions)} functions")
+    
+    for func in functions:
+        print(f"Function: {func['name']}")
+        print(f"Parameters: {func['params']}")
+        print(f"Complexity: {func['complexity']}")
+        print("---")
+
+if __name__ == "__main__":
+    test_analyzer()
+Task 2: Implement AI Test Suggester
+Step 1: Set Up Local AI Model (Ollama)
+# Install Ollama for local AI inference
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Pull a code-focused model
+ollama pull codellama:7b
+
+# Verify installation
+ollama list
+Step 2: Create Test Suggester Module
+Create src/test_suggester.py:
+
+import json
+import subprocess
+from typing import List, Dict
+
+class TestSuggester:
+    """Generates test suggestions using AI based on code analysis."""
+    
+    def __init__(self, model_name: str = "codellama:7b"):
+        """
+        Initialize the test suggester.
+        
+        Args:
+            model_name: Name of the Ollama model to use
+        """
+        self.model_name = model_name
+    
+    def generate_prompt(self, function_data: Dict) -> str:
+        """
+        Create a prompt for the AI model based on function data.
+        
+        Args:
+            function_data: Dictionary containing function metadata
+            
+        Returns:
+            Formatted prompt string
+        """
+        # TODO: Build a structured prompt that includes:
+        # - Function name and signature
+        # - Complexity metrics
+        # - Request for test cases covering edge cases
+        # TODO: Format as clear instructions for the AI
+        pass
+    
+    def call_ollama(self, prompt: str) -> str:
+        """
+        Call Ollama API to generate test suggestions.
+        
+        Args:
+            prompt: The prompt to send to the model
+            
+        Returns:
+            AI-generated response
+        """
+        # TODO: Use subprocess to call ollama CLI
+        # TODO: Format command: ollama run <model> "<prompt>"
+        # TODO: Capture and return output
+        pass
+    
+    def parse_suggestions(self, ai_response: str) -> List[Dict]:
+        """
+        Parse AI response into structured test suggestions.
+        
+        Args:
+            ai_response: Raw response from AI model
+            
+        Returns:
+            List of test case suggestions
+        """
+        # TODO: Extract test case descriptions
+        # TODO: Identify test inputs and expected outputs
+        # TODO: Categorize by test type (happy path, edge case, error)
+        pass
+    
+    def suggest_tests(self, function_data: Dict) -> Dict:
+        """
+        Generate complete test suggestions for a function.
+        
+        Args:
+            function_data: Function metadata from analyzer
+            
+        Returns:
+            Dictionary with test suggestions and rationale
+        """
+        # TODO: Generate prompt
+        # TODO: Call AI model
+        # TODO: Parse response
+        # TODO: Return structured suggestions
+        pass
+Step 3: Create Pipeline Orchestrator
+Create src/pipeline.py:
+
+import json
+import os
+from code_analyzer import CodeAnalyzer
+from test_suggester import TestSuggester
+
+class TestSuggestionPipeline:
+    """Orchestrates the complete test suggestion workflow."""
+    
+    def __init__(self, repo_path: str, output_dir: str = "./test_suggestions"):
+        """
+        Initialize the pipeline.
+        
+        Args:
+            repo_path: Path to git repository
+            output_dir: Directory to save suggestions
+        """
+        self.analyzer = CodeAnalyzer(repo_path)
+        self.suggester = TestSuggester()
+        self.output_dir = output_dir
+        os.makedirs(output_dir, exist_ok=True)
+    
+    def run(self, commit_range: str = "HEAD~1..HEAD") -> Dict:
+        """
+        Execute the complete pipeline.
+        
+        Args:
+            commit_range: Git commit range to analyze
+            
+        Returns:
+            Summary of generated suggestions
+        """
+        # TODO: Get changed files from analyzer
+        # TODO: For each file, extract functions
+        # TODO: For each function, generate test suggestions
+        # TODO: Save suggestions to JSON file
+        # TODO: Generate summary report
+        pass
+    
+    def generate_report(self, suggestions: Dict) -> str:
+        """
+        Generate human-readable report from suggestions.
+        
+        Args:
+            suggestions: Dictionary of all test suggestions
+            
+        Returns:
+            Formatted report string
+        """
+        # TODO: Format suggestions as markdown report
+        # TODO: Include statistics (functions analyzed, tests suggested)
+        # TODO: Prioritize by complexity or risk
+        pass
+
+def main():
+    """Main entry point for the pipeline."""
+    # TODO: Parse command-line arguments
+    # TODO: Initialize and run pipeline
+    # TODO: Display results
+    pass
+
+if __name__ == "__main__":
+    main()
+Step 4: Run the Complete Pipeline
+cd ~/ai-test-pipeline
+
+# Activate virtual environment
+source venv/bin/activate
+
+# Run the pipeline on sample project
+python3 src/pipeline.py --repo ./sample_project --output ./suggestions
+
+# View generated suggestions
+cat suggestions/test_suggestions.json
+cat suggestions/report.md
+Step 5: Create a New Change to Test Pipeline
+cd ~/ai-test-pipeline/sample_project
+
+# Add a new function with complexity
+cat >> calculator.py << 'EOF'
+
+def calculate_tax(amount, tax_rate, region):
+    """Calculate tax with regional rules."""
+    if region == "US":
+        if amount > 1000:
+            return amount * (tax_rate * 1.1)
+        return amount * tax_rate
+    elif region == "EU":
+        if amount > 500:
+            return amount * (tax_rate * 1.2)
+        return amount * tax_rate
+    else:
+        return amount * tax_rate
+EOF
+
+# Commit the change
+git add calculator.py
+git commit -m "Add tax calculation with regional logic"
+
+# Run pipeline on this change
+cd ~/ai-test-pipeline
+python3 src/pipeline.py --repo ./sample_project --commit-range HEAD~1..HEAD
+Verification
+Verify Code Analyzer
+cd ~/ai-test-pipeline
+python3 tests/test_analyzer.py
+Expected output:
+
+List of functions found in calculator.py
+Function parameters extracted correctly
+Complexity metrics calculated
+Verify AI Integration
+# Test Ollama is running
+ollama list
+
+# Should show codellama:7b model
+Verify Complete Pipeline
+# Check output directory exists
+ls -la suggestions/
+
+# Verify JSON output structure
+python3 -m json.tool suggestions/test_suggestions.json
+
+# Check report generated
+cat suggestions/report.md
+Expected results:
+
+JSON file with test suggestions for each function
+Markdown report with prioritized test recommendations
+Suggestions include edge cases, error conditions, and boundary tests
+Verify Test Suggestions Quality
+Review the generated suggestions for the calculate_tax function:
+
+Should suggest tests for different regions
+Should identify boundary conditions (1000, 500)
+Should recommend error handling tests
+Should suggest parameterized test approaches
+Troubleshooting
+Ollama not responding:
+
+# Check Ollama service
+systemctl status ollama
+
+# Restart if needed
+sudo systemctl restart ollama
+Git repository errors:
+
+# Ensure sample_project is initialized
+cd sample_project
+git status
+Import errors:
+
+# Verify virtual environment is activated
+which python3
+# Should show path in venv directory
+
+# Reinstall packages if needed
+pip install --force-reinstall openai gitpython
+AST parsing errors:
+
+Ensure Python files have valid syntax
+Check file encoding is UTF-8
+Conclusion
+You've successfully built an AI-powered test suggestion pipeline that:
+
+Analyzes code changes using Git and AST parsing
+Extracts function complexity metrics
+Generates intelligent test suggestions using local AI models
+Produces actionable reports for improving test coverage
+This pipeline can be integrated into CI/CD workflows to automatically suggest tests for every pull request, helping DevOps teams maintain high code quality and catch potential issues before deployment. The use of local AI models (Ollama) ensures data privacy and eliminates external API dependencies.
+
+Key Takeaways:
+
+Code analysis can be automated using Python's AST module
+Local AI models provide powerful code understanding capabilities
+Combining static analysis with AI generates more comprehensive test suggestions
+Automated test suggestion reduces manual effort in maintaining test coverage
