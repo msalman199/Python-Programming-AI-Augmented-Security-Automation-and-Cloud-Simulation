@@ -1,0 +1,461 @@
+Golden Config Enforcement
+Prerequisites
+Basic Linux command line knowledge
+Understanding of YAML/JSON file formats
+Familiarity with Git basics
+Basic Python scripting experience
+Understanding of configuration management concepts
+Learning Objectives
+By completing this lab, you will:
+
+Implement golden configuration standards for infrastructure
+Build automated configuration validation systems
+Create enforcement mechanisms to block non-compliant configurations
+Develop comparison tools for configuration drift detection
+Environment Setup
+Step 1: Install Required Tools
+# Update system packages
+sudo apt update
+
+# Install Python and pip
+sudo apt install -y python3 python3-pip git
+
+# Install required Python libraries
+pip3 install pyyaml jsonschema deepdiff
+Step 2: Create Lab Directory Structure
+# Create working directory
+mkdir -p ~/golden-config-lab/{golden,current,scripts,logs}
+cd ~/golden-config-lab
+Task 1: Create Golden Configuration Standards
+Step 1.1: Define Golden Configuration Templates
+Create a golden configuration for a web server:
+
+cat > golden/webserver_golden.yaml << 'EOF'
+service:
+  name: nginx
+  version: "1.18+"
+  state: running
+  enabled: true
+
+security:
+  firewall:
+    enabled: true
+    allowed_ports:
+      - 80
+      - 443
+  ssl:
+    enabled: true
+    min_tls_version: "1.2"
+  
+network:
+  listen_address: "0.0.0.0"
+  max_connections: 1024
+  timeout: 30
+
+logging:
+  level: "info"
+  path: "/var/log/nginx"
+  rotation: "daily"
+  retention_days: 30
+EOF
+Create a golden configuration for SSH service:
+
+cat > golden/ssh_golden.yaml << 'EOF'
+service:
+  name: sshd
+  port: 22
+  state: running
+
+security:
+  permit_root_login: false
+  password_authentication: false
+  pubkey_authentication: true
+  max_auth_tries: 3
+  
+hardening:
+  protocol: 2
+  x11_forwarding: false
+  use_pam: true
+  client_alive_interval: 300
+EOF
+Step 1.2: Create Configuration Schema Validator
+Create a JSON schema for validation:
+
+cat > golden/config_schema.json << 'EOF'
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["service", "security"],
+  "properties": {
+    "service": {
+      "type": "object",
+      "required": ["name", "state"]
+    },
+    "security": {
+      "type": "object",
+      "minProperties": 1
+    }
+  }
+}
+EOF
+Task 2: Build Configuration Comparison and Enforcement System
+Step 2.1: Create Configuration Validator Script
+Create the main validation script with starter code:
+
+cat > scripts/config_enforcer.py << 'EOF'
+#!/usr/bin/env python3
+"""
+Golden Configuration Enforcement System
+Compares current configurations against golden standards
+"""
+
+import yaml
+import json
+import sys
+from pathlib import Path
+from deepdiff import DeepDiff
+from datetime import datetime
+
+class ConfigEnforcer:
+    def __init__(self, golden_dir, current_dir, log_dir):
+        self.golden_dir = Path(golden_dir)
+        self.current_dir = Path(current_dir)
+        self.log_dir = Path(log_dir)
+        self.violations = []
+        
+    def load_yaml(self, filepath):
+        """
+        Load YAML configuration file
+        
+        Args:
+            filepath: Path to YAML file
+            
+        Returns:
+            Dictionary with configuration data
+        """
+        # TODO: Implement YAML file loading with error handling
+        # TODO: Return parsed YAML as dictionary
+        pass
+    
+    def compare_configs(self, golden_config, current_config, config_name):
+        """
+        Compare current config against golden standard
+        
+        Args:
+            golden_config: Golden configuration dictionary
+            current_config: Current configuration dictionary
+            config_name: Name of the configuration being checked
+            
+        Returns:
+            Dictionary with comparison results and violations
+        """
+        # TODO: Use DeepDiff to compare configurations
+        # TODO: Identify missing required fields
+        # TODO: Identify changed values
+        # TODO: Return structured violation report
+        pass
+    
+    def check_security_violations(self, current_config, config_name):
+        """
+        Check for critical security violations
+        
+        Args:
+            current_config: Current configuration dictionary
+            config_name: Name of configuration
+            
+        Returns:
+            List of security violations
+        """
+        security_violations = []
+        
+        # TODO: Implement security checks
+        # Check if security section exists
+        # Check for weak settings (e.g., root login enabled)
+        # Check for missing encryption settings
+        
+        return security_violations
+    
+    def enforce_config(self, config_name):
+        """
+        Main enforcement function
+        
+        Args:
+            config_name: Name of config file to enforce
+            
+        Returns:
+            Boolean indicating if config is compliant
+        """
+        # TODO: Load golden and current configurations
+        # TODO: Run comparison
+        # TODO: Check security violations
+        # TODO: Log results
+        # TODO: Return compliance status
+        pass
+    
+    def log_violations(self, violations, config_name):
+        """
+        Log violations to file
+        
+        Args:
+            violations: List of violation dictionaries
+            config_name: Configuration name
+        """
+        # TODO: Create timestamped log entry
+        # TODO: Write violations to log file
+        # TODO: Print summary to console
+        pass
+    
+    def block_deployment(self, config_name, reason):
+        """
+        Block deployment due to violations
+        
+        Args:
+            config_name: Configuration name
+            reason: Reason for blocking
+        """
+        print(f"\n{'='*60}")
+        print(f"DEPLOYMENT BLOCKED: {config_name}")
+        print(f"{'='*60}")
+        print(f"Reason: {reason}")
+        print(f"{'='*60}\n")
+        sys.exit(1)
+
+def main():
+    enforcer = ConfigEnforcer(
+        golden_dir='golden',
+        current_dir='current',
+        log_dir='logs'
+    )
+    
+    # TODO: Implement main enforcement logic
+    # TODO: Check all configurations in current directory
+    # TODO: Compare against golden standards
+    # TODO: Block if violations found
+    pass
+
+if __name__ == "__main__":
+    main()
+EOF
+
+chmod +x scripts/config_enforcer.py
+Step 2.2: Create Test Current Configurations
+Create a compliant configuration:
+
+cat > current/webserver_compliant.yaml << 'EOF'
+service:
+  name: nginx
+  version: "1.20"
+  state: running
+  enabled: true
+
+security:
+  firewall:
+    enabled: true
+    allowed_ports:
+      - 80
+      - 443
+  ssl:
+    enabled: true
+    min_tls_version: "1.2"
+  
+network:
+  listen_address: "0.0.0.0"
+  max_connections: 1024
+  timeout: 30
+
+logging:
+  level: "info"
+  path: "/var/log/nginx"
+  rotation: "daily"
+  retention_days: 30
+EOF
+Create a non-compliant configuration with violations:
+
+cat > current/ssh_violation.yaml << 'EOF'
+service:
+  name: sshd
+  port: 22
+  state: running
+
+security:
+  permit_root_login: true
+  password_authentication: true
+  pubkey_authentication: true
+  max_auth_tries: 10
+  
+hardening:
+  protocol: 2
+  x11_forwarding: true
+  use_pam: true
+  client_alive_interval: 600
+EOF
+Step 2.3: Implement the Configuration Enforcer
+Complete the implementation (students should code this):
+
+# Students complete the ConfigEnforcer class methods
+# Key implementation points:
+
+# load_yaml method:
+# - Open and read YAML file
+# - Handle file not found errors
+# - Return parsed dictionary
+
+# compare_configs method:
+# - Use DeepDiff(golden_config, current_config)
+# - Extract values_changed, dictionary_item_added, dictionary_item_removed
+# - Format violations with paths and values
+
+# check_security_violations method:
+# - Check if security.permit_root_login is True
+# - Check if password_authentication is True
+# - Check if SSL/TLS is disabled
+# - Check for weak timeout values
+
+# enforce_config method:
+# - Load both configs
+# - Run comparisons
+# - Aggregate violations
+# - Call block_deployment if violations exist
+Step 2.4: Create Automated Enforcement Hook
+Create a pre-deployment check script:
+
+cat > scripts/pre_deploy_check.sh << 'EOF'
+#!/bin/bash
+"""
+Pre-deployment enforcement hook
+Runs before any configuration deployment
+"""
+
+echo "Running Golden Configuration Enforcement..."
+echo "=========================================="
+
+# TODO: Run config enforcer
+# TODO: Check exit code
+# TODO: Allow deployment only if exit code is 0
+
+python3 scripts/config_enforcer.py
+
+if [ $? -eq 0 ]; then
+    echo "All configurations compliant. Deployment allowed."
+    exit 0
+else
+    echo "Configuration violations detected. Deployment blocked."
+    exit 1
+fi
+EOF
+
+chmod +x scripts/pre_deploy_check.sh
+Step 2.5: Create Reporting Dashboard Script
+cat > scripts/compliance_report.py << 'EOF'
+#!/usr/bin/env python3
+"""
+Generate compliance report from logs
+"""
+
+import json
+from pathlib import Path
+from datetime import datetime
+from collections import defaultdict
+
+def generate_report(log_dir):
+    """
+    Generate compliance report
+    
+    Args:
+        log_dir: Directory containing log files
+    """
+    # TODO: Read all log files
+    # TODO: Parse violation data
+    # TODO: Generate summary statistics
+    # TODO: Create formatted report
+    pass
+
+def print_summary(stats):
+    """
+    Print formatted summary
+    
+    Args:
+        stats: Dictionary with statistics
+    """
+    # TODO: Print total checks
+    # TODO: Print compliance rate
+    # TODO: Print top violations
+    pass
+
+if __name__ == "__main__":
+    generate_report('logs')
+EOF
+
+chmod +x scripts/compliance_report.py
+Verification
+Step 1: Test Compliant Configuration
+# Test with compliant config
+cd ~/golden-config-lab
+python3 scripts/config_enforcer.py
+
+# Expected: No violations, exit code 0
+echo $?
+Step 2: Test Violation Detection
+# Rename violation config to trigger check
+mv current/ssh_violation.yaml current/ssh_current.yaml
+
+# Run enforcer - should detect violations
+python3 scripts/config_enforcer.py
+
+# Expected: Violations detected, deployment blocked, exit code 1
+Step 3: Review Violation Logs
+# Check generated logs
+ls -la logs/
+cat logs/violations_*.log
+Step 4: Test Pre-deployment Hook
+# Run pre-deployment check
+./scripts/pre_deploy_check.sh
+
+# Should block deployment due to violations
+Step 5: Generate Compliance Report
+# Generate summary report
+python3 scripts/compliance_report.py
+Expected Outcomes
+After completing this lab, you should have:
+
+Golden Configuration Repository: Standardized configuration templates
+Automated Validator: Python-based enforcement system
+Violation Detection: Identifies configuration drift and security issues
+Blocking Mechanism: Prevents non-compliant deployments
+Audit Trail: Logs of all violations and checks
+Reporting System: Compliance dashboards and summaries
+Troubleshooting Tips
+Import Errors:
+
+# Reinstall Python packages
+pip3 install --upgrade pyyaml jsonschema deepdiff
+YAML Parsing Errors:
+
+Verify YAML syntax with: python3 -c "import yaml; yaml.safe_load(open('file.yaml'))"
+Check for proper indentation (use spaces, not tabs)
+Permission Denied:
+
+# Ensure scripts are executable
+chmod +x scripts/*.py scripts/*.sh
+No Violations Detected:
+
+Verify current config differs from golden config
+Check file paths are correct
+Ensure comparison logic is implemented
+Conclusion
+You have successfully built a Golden Configuration Enforcement system that:
+
+Defines and maintains approved configuration standards
+Automatically compares current configurations against golden templates
+Detects security violations and configuration drift
+Blocks non-compliant deployments before they reach production
+Provides audit trails and compliance reporting
+This system is critical for DevOps environments where configuration consistency, security compliance, and change control are essential. The enforcement mechanism prevents configuration drift and ensures all deployments meet organizational standards, reducing security risks and operational issues.
+
+Key Takeaways:
+
+Golden configurations provide a single source of truth
+Automated enforcement prevents human error
+Pre-deployment checks catch issues early
+Audit logs support compliance requirements
+Configuration as code enables version control and review processes
