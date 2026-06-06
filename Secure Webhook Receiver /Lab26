@@ -1,0 +1,372 @@
+Secure Webhook Receiver
+Prerequisites
+Basic understanding of HTTP requests and REST APIs
+Familiarity with Python programming
+Knowledge of cryptographic concepts (HMAC, SHA256)
+Basic Linux command line skills
+Understanding of JSON data format
+Learning Objectives
+By completing this lab, you will:
+
+Implement webhook signature verification using HMAC
+Validate incoming webhook payloads against schemas
+Create secure logging mechanisms for webhook events
+Handle webhook security best practices
+Environment Setup
+After clicking "Start Lab", you'll have access to a bare-metal Linux machine. Install the required tools:
+
+# Update package manager
+sudo apt update
+
+# Install Python 3 and pip
+sudo apt install -y python3 python3-pip python3-venv
+
+# Create project directory
+mkdir -p ~/webhook-receiver
+cd ~/webhook-receiver
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install required packages
+pip install flask jsonschema
+Task 1: Build Webhook Receiver with Signature Verification
+Step 1: Create the Webhook Server Structure
+Create the main application file:
+
+touch webhook_server.py
+Add the following starter code to webhook_server.py:
+
+from flask import Flask, request, jsonify
+import hmac
+import hashlib
+import json
+import logging
+from datetime import datetime
+from jsonschema import validate, ValidationError
+
+app = Flask(__name__)
+
+# Configuration
+WEBHOOK_SECRET = "your-secret-key-change-this"
+LOG_FILE = "webhook_events.log"
+
+# Configure logging
+logging.basicConfig(
+    filename=LOG_FILE,
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+def verify_signature(payload_body, signature_header):
+    """
+    Verify the webhook signature using HMAC-SHA256.
+    
+    Args:
+        payload_body: Raw request body as bytes
+        signature_header: Signature from request header
+    
+    Returns:
+        Boolean indicating if signature is valid
+    
+    TODO: Implement HMAC signature verification
+    TODO: Compare computed signature with provided signature
+    TODO: Use constant-time comparison to prevent timing attacks
+    """
+    pass
+
+def validate_payload(payload):
+    """
+    Validate webhook payload against expected schema.
+    
+    Args:
+        payload: Dictionary containing webhook data
+    
+    Returns:
+        Boolean indicating if payload is valid
+    
+    TODO: Define JSON schema for expected payload structure
+    TODO: Use jsonschema.validate() to check payload
+    TODO: Handle ValidationError exceptions
+    """
+    schema = {
+        # TODO: Define your schema here
+        # Example structure:
+        # "type": "object",
+        # "properties": {...},
+        # "required": [...]
+    }
+    pass
+
+def log_webhook_event(event_type, payload, status):
+    """
+    Log webhook event details securely.
+    
+    Args:
+        event_type: Type of webhook event
+        payload: Webhook payload data
+        status: Processing status (success/failure)
+    
+    TODO: Create structured log entry
+    TODO: Sanitize sensitive data before logging
+    TODO: Use logging module to write to file
+    """
+    pass
+
+@app.route('/webhook', methods=['POST'])
+def webhook_handler():
+    """
+    Main webhook endpoint handler.
+    
+    TODO: Extract signature from headers
+    TODO: Verify signature using verify_signature()
+    TODO: Parse JSON payload
+    TODO: Validate payload structure
+    TODO: Process webhook event
+    TODO: Log the event
+    TODO: Return appropriate HTTP responses
+    """
+    pass
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint."""
+    return jsonify({"status": "healthy"}), 200
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=False)
+Step 2: Implement Signature Verification
+Complete the verify_signature() function with these requirements:
+
+Generate HMAC-SHA256 hash of the payload using the secret key
+Compare with the signature from the X-Hub-Signature-256 header
+Use hmac.compare_digest() for secure comparison
+Expected header format: sha256=<hexdigest>
+Hints:
+
+# Create HMAC object
+expected_signature = hmac.new(
+    key=WEBHOOK_SECRET.encode(),
+    msg=payload_body,
+    digestmod=hashlib.sha256
+).hexdigest()
+
+# Format for comparison
+expected_sig = f"sha256={expected_signature}"
+Step 3: Implement Payload Validation
+Complete the validate_payload() function:
+
+Define a schema for a typical webhook payload:
+
+schema = {
+    "type": "object",
+    "properties": {
+        "event": {"type": "string"},
+        "timestamp": {"type": "string"},
+        "data": {"type": "object"}
+    },
+    "required": ["event", "timestamp", "data"]
+}
+Use try-except to handle validation:
+
+try:
+    validate(instance=payload, schema=schema)
+    return True
+except ValidationError as e:
+    logging.error(f"Payload validation failed: {e.message}")
+    return False
+Step 4: Implement Secure Logging
+Complete the log_webhook_event() function:
+
+Create a structured log entry with timestamp, event type, and status
+Sanitize sensitive fields (passwords, tokens, API keys)
+Include only necessary payload information
+Example structure:
+
+log_entry = {
+    "timestamp": datetime.utcnow().isoformat(),
+    "event_type": event_type,
+    "status": status,
+    "payload_summary": {
+        # Include non-sensitive fields only
+    }
+}
+Step 5: Complete the Webhook Handler
+Implement the webhook_handler() function with this flow:
+
+Extract signature from request.headers.get('X-Hub-Signature-256')
+Get raw request body: request.get_data()
+Verify signature - return 401 if invalid
+Parse JSON payload
+Validate payload structure - return 400 if invalid
+Process the webhook (for now, just acknowledge receipt)
+Log the event
+Return 200 with success message
+Task 2: Test the Webhook Receiver
+Step 1: Create Test Client
+Create a file named test_webhook.py:
+
+import requests
+import hmac
+import hashlib
+import json
+from datetime import datetime
+
+WEBHOOK_URL = "http://localhost:5000/webhook"
+SECRET = "your-secret-key-change-this"
+
+def send_webhook(payload, use_valid_signature=True):
+    """
+    Send a test webhook request.
+    
+    Args:
+        payload: Dictionary containing webhook data
+        use_valid_signature: Whether to send valid or invalid signature
+    
+    TODO: Convert payload to JSON string
+    TODO: Generate HMAC signature
+    TODO: Send POST request with signature header
+    TODO: Print response status and body
+    """
+    # Convert payload to JSON bytes
+    payload_bytes = json.dumps(payload).encode()
+    
+    # TODO: Generate signature
+    if use_valid_signature:
+        signature = hmac.new(
+            # Complete this
+        ).hexdigest()
+    else:
+        signature = "invalid_signature"
+    
+    # TODO: Send request with headers
+    headers = {
+        'Content-Type': 'application/json',
+        'X-Hub-Signature-256': f'sha256={signature}'
+    }
+    
+    # TODO: Make POST request and handle response
+    pass
+
+if __name__ == "__main__":
+    # Test 1: Valid webhook
+    valid_payload = {
+        "event": "user.created",
+        "timestamp": datetime.utcnow().isoformat(),
+        "data": {
+            "user_id": "12345",
+            "username": "testuser"
+        }
+    }
+    
+    print("Test 1: Sending valid webhook...")
+    send_webhook(valid_payload, use_valid_signature=True)
+    
+    # Test 2: Invalid signature
+    print("\nTest 2: Sending webhook with invalid signature...")
+    send_webhook(valid_payload, use_valid_signature=False)
+    
+    # Test 3: Invalid payload structure
+    invalid_payload = {
+        "wrong_field": "value"
+    }
+    print("\nTest 3: Sending invalid payload...")
+    send_webhook(invalid_payload, use_valid_signature=True)
+Step 2: Run the Webhook Server
+In one terminal:
+
+cd ~/webhook-receiver
+source venv/bin/activate
+python3 webhook_server.py
+Step 3: Execute Tests
+In a second terminal:
+
+cd ~/webhook-receiver
+source venv/bin/activate
+python3 test_webhook.py
+Step 4: Verify Logging
+Check the log file:
+
+cat webhook_events.log
+Expected output should show:
+
+Successful webhook processing for Test 1
+Signature verification failure for Test 2
+Payload validation failure for Test 3
+Verification
+Check 1: Server Functionality
+Verify the server is running:
+
+curl http://localhost:5000/health
+Expected output: {"status":"healthy"}
+
+Check 2: Signature Verification
+Test with curl:
+
+# This should fail (no signature)
+curl -X POST http://localhost:5000/webhook \
+  -H "Content-Type: application/json" \
+  -d '{"event":"test","timestamp":"2024-01-01T00:00:00","data":{}}'
+Expected: HTTP 401 or 403 response
+
+Check 3: Log File Contents
+Verify logs contain structured information:
+
+tail -n 20 webhook_events.log
+Look for:
+
+Timestamp for each event
+Event types logged
+Success/failure status
+No sensitive data exposed
+Check 4: Payload Validation
+Review your implementation:
+
+Schema correctly defines required fields
+ValidationError is caught and handled
+Invalid payloads return 400 status code
+Troubleshooting Tips
+Issue: Signature verification always fails
+
+Ensure the secret key matches between server and client
+Verify you're using raw request body (bytes) for signature calculation
+Check header format is exactly sha256=<hexdigest>
+Issue: Import errors
+
+Confirm virtual environment is activated
+Reinstall packages: pip install flask jsonschema
+Issue: Port already in use
+
+Change port in app.run() to 5001 or another available port
+Kill existing process: sudo lsof -ti:5000 | xargs kill -9
+Issue: Logs not writing
+
+Check file permissions: ls -l webhook_events.log
+Verify LOG_FILE path is correct
+Ensure logging.basicConfig() is called before any logging
+Conclusion
+You have successfully built a secure webhook receiver that:
+
+Verifies signatures using HMAC-SHA256 to ensure webhooks come from trusted sources
+Validates payloads against defined schemas to prevent malformed data processing
+Logs events securely without exposing sensitive information
+These skills are essential for DevOps engineers working with:
+
+CI/CD pipelines triggered by webhooks (GitHub, GitLab)
+Payment processing systems (Stripe, PayPal)
+Monitoring and alerting systems (PagerDuty, Datadog)
+Microservices communication
+Key Takeaways:
+
+Always verify webhook signatures before processing
+Use constant-time comparison to prevent timing attacks
+Validate all external input against expected schemas
+Log events for audit trails but sanitize sensitive data
+Return appropriate HTTP status codes for different failure scenarios
+Next Steps:
+
+Implement replay attack prevention using timestamp validation
+Add rate limiting to prevent abuse
+Store webhook events in a database for persistence
+Create webhook retry mechanisms for failed processing
