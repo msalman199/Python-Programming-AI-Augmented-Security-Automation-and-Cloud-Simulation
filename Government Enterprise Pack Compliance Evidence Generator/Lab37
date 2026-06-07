@@ -1,0 +1,538 @@
+Government Enterprise Pack Compliance Evidence Generator
+Prerequisites
+Basic Linux command-line proficiency
+Understanding of JSON and YAML formats
+Familiarity with log file structures
+Basic Python scripting knowledge
+Understanding of compliance concepts (audit trails, evidence collection)
+Learning Objectives
+By completing this lab, you will:
+
+Generate compliance artifacts for government enterprise environments
+Create automated audit evidence reports
+Produce structured logs for compliance verification
+Implement evidence collection workflows using open-source tools
+Environment Setup
+You will use the Al Nafi bare-metal Linux machine provided via the "Start Lab" button. All tools will be installed during this lab.
+
+Install Required Tools
+# Update package manager
+sudo apt update
+
+# Install Python and pip
+sudo apt install -y python3 python3-pip python3-venv
+
+# Install additional utilities
+sudo apt install -y jq git curl
+
+# Create project directory
+mkdir -p ~/compliance-lab
+cd ~/compliance-lab
+
+# Create Python virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install Python packages
+pip install pyyaml jinja2 python-dateutil
+Task 1: Build Compliance Evidence Generator Framework
+Step 1: Create Project Structure
+cd ~/compliance-lab
+
+# Create directory structure
+mkdir -p {templates,output,logs,config,scripts}
+
+# Create configuration file
+cat > config/compliance_config.yaml << 'EOF'
+organization:
+  name: "Federal Agency Demo"
+  department: "IT Operations"
+  compliance_framework: "NIST 800-53"
+
+evidence_types:
+  - system_logs
+  - access_logs
+  - configuration_snapshots
+  - security_events
+
+report_formats:
+  - json
+  - html
+  - csv
+EOF
+Step 2: Create Evidence Collection Module
+Create scripts/evidence_collector.py:
+
+#!/usr/bin/env python3
+"""
+Compliance Evidence Collector
+Collects system evidence for compliance reporting
+"""
+
+import json
+import yaml
+import subprocess
+from datetime import datetime
+from pathlib import Path
+
+class EvidenceCollector:
+    def __init__(self, config_path):
+        """
+        Initialize evidence collector with configuration
+        
+        Args:
+            config_path: Path to YAML configuration file
+        """
+        # TODO: Load configuration from YAML file
+        # TODO: Initialize output directory
+        # TODO: Set up logging
+        pass
+    
+    def collect_system_logs(self):
+        """
+        Collect system logs for compliance evidence
+        
+        Returns:
+            dict: Collected log data with metadata
+        """
+        evidence = {
+            'timestamp': datetime.now().isoformat(),
+            'evidence_type': 'system_logs',
+            'data': []
+        }
+        
+        # TODO: Collect auth logs (last 100 lines)
+        # Hint: Use subprocess to run: journalctl -n 100 --no-pager
+        
+        # TODO: Collect system service status
+        # Hint: systemctl list-units --type=service --state=running
+        
+        # TODO: Add collected data to evidence['data']
+        
+        return evidence
+    
+    def collect_access_logs(self):
+        """
+        Collect user access logs
+        
+        Returns:
+            dict: Access log evidence
+        """
+        # TODO: Implement collection of:
+        # - Last login information (last -n 50)
+        # - Current logged-in users (who)
+        # - Failed login attempts (lastb -n 20)
+        pass
+    
+    def collect_configuration_snapshot(self):
+        """
+        Collect system configuration snapshot
+        
+        Returns:
+            dict: Configuration evidence
+        """
+        # TODO: Collect:
+        # - Network configuration (ip addr)
+        # - Firewall rules (sudo iptables -L -n)
+        # - Installed packages (dpkg -l | head -50)
+        pass
+
+# Starter code for testing
+if __name__ == "__main__":
+    collector = EvidenceCollector('../config/compliance_config.yaml')
+    # TODO: Test collection methods
+Step 3: Implement Report Generator
+Create scripts/report_generator.py:
+
+#!/usr/bin/env python3
+"""
+Compliance Report Generator
+Generates formatted compliance reports from evidence
+"""
+
+import json
+import csv
+from datetime import datetime
+from pathlib import Path
+
+class ComplianceReportGenerator:
+    def __init__(self, evidence_data, output_dir='../output'):
+        """
+        Initialize report generator
+        
+        Args:
+            evidence_data: List of evidence dictionaries
+            output_dir: Directory for output files
+        """
+        # TODO: Store evidence data
+        # TODO: Create output directory if not exists
+        pass
+    
+    def generate_json_report(self, filename='compliance_report.json'):
+        """
+        Generate JSON format compliance report
+        
+        Args:
+            filename: Output filename
+        
+        Returns:
+            str: Path to generated report
+        """
+        report = {
+            'report_metadata': {
+                'generated_at': datetime.now().isoformat(),
+                'report_type': 'compliance_evidence',
+                'version': '1.0'
+            },
+            'evidence_summary': {
+                # TODO: Count evidence items by type
+                # TODO: Add total evidence count
+            },
+            'evidence_items': []  # TODO: Add all evidence
+        }
+        
+        # TODO: Write JSON report to file
+        # TODO: Return file path
+        pass
+    
+    def generate_html_report(self, filename='compliance_report.html'):
+        """
+        Generate HTML format compliance report
+        
+        Args:
+            filename: Output filename
+        
+        Returns:
+            str: Path to generated report
+        """
+        html_template = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Compliance Evidence Report</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                table {{ border-collapse: collapse; width: 100%; }}
+                th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+                th {{ background-color: #4CAF50; color: white; }}
+            </style>
+        </head>
+        <body>
+            <h1>Compliance Evidence Report</h1>
+            <p>Generated: {timestamp}</p>
+            <!-- TODO: Add evidence summary table -->
+            <!-- TODO: Add detailed evidence sections -->
+        </body>
+        </html>
+        """
+        
+        # TODO: Format HTML with evidence data
+        # TODO: Write to file
+        pass
+    
+    def generate_csv_report(self, filename='compliance_report.csv'):
+        """
+        Generate CSV format compliance report
+        
+        Args:
+            filename: Output filename
+        
+        Returns:
+            str: Path to generated report
+        """
+        # TODO: Create CSV with columns:
+        # timestamp, evidence_type, description, status
+        # TODO: Write all evidence items
+        pass
+
+# Test code
+if __name__ == "__main__":
+    # TODO: Load sample evidence and generate reports
+    pass
+Step 4: Create Audit Log Generator
+Create scripts/audit_logger.py:
+
+#!/usr/bin/env python3
+"""
+Audit Log Generator
+Creates structured audit logs for compliance tracking
+"""
+
+import json
+import logging
+from datetime import datetime
+from pathlib import Path
+
+class AuditLogger:
+    def __init__(self, log_dir='../logs'):
+        """
+        Initialize audit logger
+        
+        Args:
+            log_dir: Directory for audit logs
+        """
+        # TODO: Set up logging configuration
+        # TODO: Create log directory
+        # TODO: Configure JSON log format
+        pass
+    
+    def log_evidence_collection(self, evidence_type, status, details=None):
+        """
+        Log evidence collection event
+        
+        Args:
+            evidence_type: Type of evidence collected
+            status: Success or failure status
+            details: Additional details dictionary
+        """
+        audit_entry = {
+            'timestamp': datetime.now().isoformat(),
+            'event_type': 'evidence_collection',
+            'evidence_type': evidence_type,
+            'status': status,
+            'details': details or {}
+        }
+        
+        # TODO: Write to audit log file
+        # TODO: Also write to structured JSON log
+        pass
+    
+    def log_report_generation(self, report_type, output_path, status):
+        """
+        Log report generation event
+        
+        Args:
+            report_type: Format of generated report
+            output_path: Path to generated report
+            status: Success or failure status
+        """
+        # TODO: Create audit entry for report generation
+        # TODO: Log to file
+        pass
+    
+    def generate_audit_summary(self):
+        """
+        Generate summary of all audit events
+        
+        Returns:
+            dict: Summary statistics
+        """
+        # TODO: Read all audit logs
+        # TODO: Count events by type and status
+        # TODO: Return summary dictionary
+        pass
+Task 2: Implement Complete Compliance Workflow
+Step 1: Create Main Orchestration Script
+Create scripts/compliance_workflow.py:
+
+#!/usr/bin/env python3
+"""
+Main Compliance Workflow Orchestrator
+Coordinates evidence collection, reporting, and audit logging
+"""
+
+import sys
+from pathlib import Path
+from evidence_collector import EvidenceCollector
+from report_generator import ComplianceReportGenerator
+from audit_logger import AuditLogger
+
+class ComplianceWorkflow:
+    def __init__(self, config_path):
+        """
+        Initialize compliance workflow
+        
+        Args:
+            config_path: Path to configuration file
+        """
+        # TODO: Initialize all components
+        # - Evidence collector
+        # - Audit logger
+        pass
+    
+    def run_full_compliance_cycle(self):
+        """
+        Execute complete compliance evidence generation cycle
+        
+        Returns:
+            dict: Results summary
+        """
+        results = {
+            'evidence_collected': [],
+            'reports_generated': [],
+            'errors': []
+        }
+        
+        # TODO: Step 1 - Collect all evidence types
+        # TODO: Step 2 - Generate all report formats
+        # TODO: Step 3 - Create audit summary
+        # TODO: Step 4 - Handle errors and log results
+        
+        return results
+    
+    def display_summary(self, results):
+        """
+        Display workflow execution summary
+        
+        Args:
+            results: Results dictionary from workflow
+        """
+        # TODO: Print formatted summary to console
+        # Include: evidence count, reports generated, any errors
+        pass
+
+def main():
+    """Main entry point"""
+    config_path = '../config/compliance_config.yaml'
+    
+    # TODO: Create workflow instance
+    # TODO: Run compliance cycle
+    # TODO: Display results
+    
+    print("\nCompliance workflow completed!")
+    print("Check the following directories:")
+    print("  - output/ for generated reports")
+    print("  - logs/ for audit logs")
+
+if __name__ == "__main__":
+    main()
+Step 2: Create Sample Data Generator
+For testing purposes, create scripts/generate_sample_data.sh:
+
+#!/bin/bash
+# Generate sample system activity for testing
+
+echo "Generating sample system activity..."
+
+# Create sample log entries
+logger -t compliance-test "Sample security event: User authentication"
+logger -t compliance-test "Sample system event: Service started"
+logger -t compliance-test "Sample access event: File accessed"
+
+# Create sample configuration file
+cat > ../output/sample_config.txt << EOF
+Sample System Configuration
+Generated: $(date)
+Hostname: $(hostname)
+Kernel: $(uname -r)
+EOF
+
+echo "Sample data generated successfully"
+Make it executable:
+
+chmod +x scripts/generate_sample_data.sh
+Step 3: Implement Your Solution
+Now complete the TODO sections in all Python scripts:
+
+evidence_collector.py: Implement all collection methods
+report_generator.py: Complete all report generation functions
+audit_logger.py: Finish audit logging functionality
+compliance_workflow.py: Orchestrate the complete workflow
+Implementation hints:
+
+Use subprocess.run() for system commands
+Handle exceptions for failed commands
+Use json.dump() and yaml.safe_load() for file operations
+Format timestamps consistently using ISO format
+Step 4: Test the Complete Workflow
+# Generate sample data
+cd ~/compliance-lab/scripts
+./generate_sample_data.sh
+
+# Run the compliance workflow
+python3 compliance_workflow.py
+
+# Verify outputs
+ls -lh ../output/
+ls -lh ../logs/
+Verification
+Verify Evidence Collection
+# Check if evidence was collected
+cd ~/compliance-lab
+
+# Verify JSON report exists and is valid
+if [ -f output/compliance_report.json ]; then
+    echo "JSON report found"
+    jq '.report_metadata' output/compliance_report.json
+else
+    echo "JSON report missing"
+fi
+
+# Verify HTML report
+if [ -f output/compliance_report.html ]; then
+    echo "HTML report found"
+    head -20 output/compliance_report.html
+else
+    echo "HTML report missing"
+fi
+
+# Check audit logs
+if [ -f logs/audit.log ]; then
+    echo "Audit log found"
+    tail -10 logs/audit.log
+else
+    echo "Audit log missing"
+fi
+Validate Report Content
+# Count evidence items in JSON report
+jq '.evidence_items | length' output/compliance_report.json
+
+# Check report metadata
+jq '.report_metadata' output/compliance_report.json
+
+# Verify evidence types collected
+jq '.evidence_summary' output/compliance_report.json
+Review Audit Trail
+# Display audit log summary
+cat logs/audit.log | grep "evidence_collection" | wc -l
+cat logs/audit.log | grep "report_generation" | wc -l
+
+# Check for any errors
+grep -i "error\|fail" logs/audit.log
+Expected Outcomes
+Upon successful completion:
+
+Evidence Collection: System logs, access logs, and configuration snapshots collected
+Report Generation: JSON, HTML, and CSV reports created in output/ directory
+Audit Logging: Structured audit trail in logs/ directory
+Workflow Execution: Complete compliance cycle runs without errors
+Sample Output Structure:
+
+compliance-lab/
+├── output/
+│   ├── compliance_report.json
+│   ├── compliance_report.html
+│   └── compliance_report.csv
+├── logs/
+│   ├── audit.log
+│   └── audit.json
+└── scripts/
+    └── (your implementation files)
+Troubleshooting Tips
+Issue: Permission denied for system commands
+
+Solution: Some commands may require sudo. Update scripts to handle this or run specific commands manually
+Issue: Missing Python modules
+
+Solution: Ensure virtual environment is activated: source ~/compliance-lab/venv/bin/activate
+Issue: Empty evidence collection
+
+Solution: Run generate_sample_data.sh first to create test data
+Issue: JSON parsing errors
+
+Solution: Validate JSON syntax using jq before processing
+Conclusion
+You have successfully built a Government Enterprise Pack Compliance Evidence Generator that:
+
+Automates collection of compliance artifacts from system sources
+Generates multiple report formats for different stakeholders
+Creates auditable logs for compliance verification
+Implements a complete evidence generation workflow
+This system demonstrates key DevOps practices for government and regulated environments where compliance evidence must be systematically collected, reported, and audited. The open-source approach ensures transparency and adaptability to specific compliance frameworks like NIST 800-53, FedRAMP, or FISMA requirements.
+
+Next Steps:
+
+Extend evidence collection to include additional system metrics
+Add encryption for sensitive compliance data
+Implement automated scheduling using cron
+Integrate with centralized log management systems
