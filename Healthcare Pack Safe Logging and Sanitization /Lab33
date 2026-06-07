@@ -1,0 +1,440 @@
+Healthcare Pack Safe Logging and Sanitization
+Prerequisites
+Basic Linux command line proficiency
+Understanding of log file formats and structure
+Familiarity with Python programming (functions, regex, file I/O)
+Basic knowledge of HIPAA compliance concepts
+Text editor experience (vim, nano, or VS Code)
+Learning Objectives
+By completing this lab, you will:
+
+Implement PII masking techniques for healthcare data
+Sanitize log files to remove sensitive information
+Enforce privacy rules using automated validation
+Create reusable logging utilities for HIPAA-compliant applications
+Environment Setup
+After clicking "Start Lab", you'll have access to a bare-metal Linux machine. Install the required tools:
+
+# Update package manager
+sudo apt update
+
+# Install Python 3 and pip
+sudo apt install -y python3 python3-pip python3-venv
+
+# Create project directory
+mkdir -p ~/healthcare-logging-lab
+cd ~/healthcare-logging-lab
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install required packages
+pip install faker python-json-logger
+Task 1: Create Sample Healthcare Logs with PII
+Step 1.1: Generate Realistic Healthcare Log Data
+Create a script to generate sample logs containing PII:
+
+nano generate_logs.py
+Add the following starter code:
+
+from faker import Faker
+import json
+import random
+from datetime import datetime
+
+fake = Faker()
+
+def generate_patient_record():
+    """
+    Generate a single patient record with PII.
+    
+    Returns:
+        dict: Patient record with sensitive information
+    """
+    # TODO: Create a dictionary with the following fields:
+    # - timestamp (current time)
+    # - patient_id (random 8-digit number)
+    # - ssn (use fake.ssn())
+    # - name (use fake.name())
+    # - email (use fake.email())
+    # - phone (use fake.phone_number())
+    # - diagnosis (random choice from common conditions)
+    # - ip_address (use fake.ipv4())
+    pass
+
+def generate_log_entries(count=50):
+    """
+    Generate multiple log entries.
+    
+    Args:
+        count: Number of log entries to generate
+    """
+    # TODO: Loop to generate 'count' records
+    # TODO: Write each record as JSON to 'healthcare_raw.log'
+    pass
+
+if __name__ == "__main__":
+    generate_log_entries(50)
+    print("Generated 50 log entries in healthcare_raw.log")
+Your implementation should:
+
+Generate realistic patient data
+Include common diagnoses: "Hypertension", "Diabetes", "Asthma", "COVID-19"
+Write one JSON object per line
+Step 1.2: Execute Log Generation
+python3 generate_logs.py
+Verify the output:
+
+head -n 3 healthcare_raw.log
+Task 2: Implement PII Masking and Log Sanitization
+Step 2.1: Create the Sanitization Module
+Create the core sanitization library:
+
+nano log_sanitizer.py
+Implement the following template:
+
+import re
+import json
+import hashlib
+from typing import Dict, Any
+
+class HealthcareLogSanitizer:
+    """
+    Sanitizes healthcare logs by masking PII according to HIPAA guidelines.
+    """
+    
+    def __init__(self):
+        self.pii_patterns = {
+            'ssn': r'\b\d{3}-\d{2}-\d{4}\b',
+            'email': r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',
+            'phone': r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b',
+            'ip': r'\b(?:\d{1,3}\.){3}\d{1,3}\b'
+        }
+    
+    def mask_ssn(self, ssn: str) -> str:
+        """
+        Mask SSN showing only last 4 digits.
+        
+        Args:
+            ssn: Social Security Number
+        
+        Returns:
+            Masked SSN (XXX-XX-1234)
+        """
+        # TODO: Implement SSN masking
+        # Keep last 4 digits, replace rest with X
+        pass
+    
+    def mask_email(self, email: str) -> str:
+        """
+        Mask email keeping first character and domain.
+        
+        Args:
+            email: Email address
+        
+        Returns:
+            Masked email (j****@example.com)
+        """
+        # TODO: Split email at @
+        # TODO: Keep first char of username, mask rest with ****
+        # TODO: Keep domain intact
+        pass
+    
+    def mask_phone(self, phone: str) -> str:
+        """
+        Mask phone number showing only last 4 digits.
+        
+        Args:
+            phone: Phone number
+        
+        Returns:
+            Masked phone (XXX-XXX-1234)
+        """
+        # TODO: Extract digits only
+        # TODO: Mask all but last 4 digits
+        pass
+    
+    def hash_patient_id(self, patient_id: str) -> str:
+        """
+        Create consistent hash of patient ID for tracking without exposing real ID.
+        
+        Args:
+            patient_id: Original patient identifier
+        
+        Returns:
+            SHA256 hash (first 16 characters)
+        """
+        # TODO: Use hashlib.sha256 to hash the patient_id
+        # TODO: Return first 16 characters of hex digest
+        pass
+    
+    def sanitize_record(self, record: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Sanitize a complete log record.
+        
+        Args:
+            record: Dictionary containing log entry
+        
+        Returns:
+            Sanitized record with masked PII
+        """
+        sanitized = record.copy()
+        
+        # TODO: Apply mask_ssn to 'ssn' field if present
+        # TODO: Apply mask_email to 'email' field if present
+        # TODO: Apply mask_phone to 'phone' field if present
+        # TODO: Apply hash_patient_id to 'patient_id' field if present
+        # TODO: Mask 'name' field (keep first name initial + last name initial)
+        # TODO: Remove 'ip_address' field entirely (not needed for medical logs)
+        
+        return sanitized
+    
+    def process_log_file(self, input_file: str, output_file: str):
+        """
+        Process entire log file and create sanitized version.
+        
+        Args:
+            input_file: Path to raw log file
+            output_file: Path to sanitized output file
+        """
+        # TODO: Open input_file for reading
+        # TODO: Open output_file for writing
+        # TODO: For each line, parse JSON, sanitize, write to output
+        # TODO: Count processed and failed records
+        pass
+
+if __name__ == "__main__":
+    sanitizer = HealthcareLogSanitizer()
+    sanitizer.process_log_file('healthcare_raw.log', 'healthcare_sanitized.log')
+Step 2.2: Test the Sanitizer
+Run your sanitization implementation:
+
+python3 log_sanitizer.py
+Compare raw vs sanitized logs:
+
+echo "=== RAW LOG SAMPLE ==="
+head -n 2 healthcare_raw.log | python3 -m json.tool
+
+echo -e "\n=== SANITIZED LOG SAMPLE ==="
+head -n 2 healthcare_sanitized.log | python3 -m json.tool
+Task 3: Enforce Privacy Rules with Validation
+Step 3.1: Create Privacy Rule Validator
+Create a validation script to ensure no PII leaks:
+
+nano privacy_validator.py
+Implement the validator:
+
+import re
+import json
+import sys
+
+class PrivacyValidator:
+    """
+    Validates that logs contain no exposed PII.
+    """
+    
+    def __init__(self):
+        self.violations = []
+        self.rules = {
+            'ssn_exposed': r'\b\d{3}-\d{2}-\d{4}\b',
+            'full_email': r'\b[A-Za-z0-9._%+-]{2,}@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',
+            'full_phone': r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b',
+            'ip_address': r'\b(?:\d{1,3}\.){3}\d{1,3}\b'
+        }
+    
+    def check_record(self, record: dict, line_num: int) -> list:
+        """
+        Check a single record for privacy violations.
+        
+        Args:
+            record: Log record to validate
+            line_num: Line number in file
+        
+        Returns:
+            List of violations found
+        """
+        violations = []
+        record_str = json.dumps(record)
+        
+        # TODO: For each rule in self.rules:
+        #   - Search for pattern in record_str
+        #   - If found, append violation with details
+        #   - Include: line_num, rule_name, matched_value
+        
+        # TODO: Check if 'ip_address' field exists (should be removed)
+        
+        # TODO: Check if SSN is properly masked (should contain XXX-XX-)
+        
+        return violations
+    
+    def validate_file(self, filename: str) -> bool:
+        """
+        Validate entire log file for privacy compliance.
+        
+        Args:
+            filename: Path to log file
+        
+        Returns:
+            True if compliant, False otherwise
+        """
+        # TODO: Read file line by line
+        # TODO: Parse each JSON record
+        # TODO: Check each record using check_record()
+        # TODO: Collect all violations
+        # TODO: Print summary report
+        pass
+    
+    def generate_report(self):
+        """
+        Generate compliance report.
+        """
+        # TODO: Print total violations found
+        # TODO: Group violations by type
+        # TODO: Print details of each violation
+        pass
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python3 privacy_validator.py <log_file>")
+        sys.exit(1)
+    
+    validator = PrivacyValidator()
+    is_compliant = validator.validate_file(sys.argv[1])
+    
+    if is_compliant:
+        print("\n✓ LOG FILE IS PRIVACY COMPLIANT")
+        sys.exit(0)
+    else:
+        print("\n✗ PRIVACY VIOLATIONS DETECTED")
+        validator.generate_report()
+        sys.exit(1)
+Step 3.2: Validate Both Log Files
+Test against raw logs (should fail):
+
+python3 privacy_validator.py healthcare_raw.log
+Test against sanitized logs (should pass):
+
+python3 privacy_validator.py healthcare_sanitized.log
+Task 4: Create Production-Ready Logging Utility
+Step 4.1: Build Integrated Logger
+Create a production-ready logger that sanitizes in real-time:
+
+nano secure_logger.py
+import logging
+from pythonjsonlogger import jsonlogger
+from log_sanitizer import HealthcareLogSanitizer
+
+class SecureHealthcareLogger:
+    """
+    Production logger with automatic PII sanitization.
+    """
+    
+    def __init__(self, log_file: str = 'secure_app.log'):
+        self.sanitizer = HealthcareLogSanitizer()
+        
+        # TODO: Configure logger with JSON formatter
+        # TODO: Set up file handler
+        # TODO: Set appropriate log level
+        pass
+    
+    def log_patient_event(self, event_type: str, patient_data: dict, message: str):
+        """
+        Log patient-related event with automatic sanitization.
+        
+        Args:
+            event_type: Type of event (admission, discharge, etc.)
+            patient_data: Dictionary with patient information
+            message: Log message
+        """
+        # TODO: Sanitize patient_data using self.sanitizer
+        # TODO: Create log entry with event_type, sanitized_data, message
+        # TODO: Log using appropriate level
+        pass
+
+# Example usage
+if __name__ == "__main__":
+    logger = SecureHealthcareLogger()
+    
+    # Simulate application events
+    patient = {
+        'patient_id': '12345678',
+        'name': 'John Doe',
+        'ssn': '123-45-6789',
+        'email': 'john.doe@example.com',
+        'phone': '555-123-4567'
+    }
+    
+    logger.log_patient_event('admission', patient, 'Patient admitted to ER')
+    logger.log_patient_event('diagnosis', patient, 'Diagnosed with pneumonia')
+    logger.log_patient_event('discharge', patient, 'Patient discharged')
+    
+    print("Logged 3 events to secure_app.log")
+Step 4.2: Test the Secure Logger
+python3 secure_logger.py
+Verify sanitization in production logs:
+
+cat secure_app.log | python3 -m json.tool
+Validate compliance:
+
+python3 privacy_validator.py secure_app.log
+Verification
+Verification Checklist
+Run these commands to verify completion:
+
+# 1. Check all files exist
+ls -lh healthcare_raw.log healthcare_sanitized.log secure_app.log
+
+# 2. Verify raw logs contain PII
+grep -E '\d{3}-\d{2}-\d{4}' healthcare_raw.log | wc -l
+# Should show matches
+
+# 3. Verify sanitized logs have no full SSNs
+grep -E '\d{3}-\d{2}-\d{4}' healthcare_sanitized.log | wc -l
+# Should show 0
+
+# 4. Verify masking patterns exist
+grep 'XXX-XX-' healthcare_sanitized.log | wc -l
+# Should show matches
+
+# 5. Run final compliance check
+python3 privacy_validator.py healthcare_sanitized.log
+echo "Exit code: $?"
+# Should exit with 0 (success)
+Expected Outcomes
+healthcare_raw.log: Contains 50 records with full PII
+healthcare_sanitized.log: Contains 50 records with masked PII
+secure_app.log: Contains sanitized events from production logger
+Privacy validator passes on sanitized logs
+Privacy validator fails on raw logs
+Troubleshooting Tips
+Issue: Regex patterns not matching
+
+Solution: Test patterns individually using re.search() in Python REPL
+Verify input format matches expected pattern
+Issue: JSON parsing errors
+
+Solution: Validate JSON syntax using python3 -m json.tool < file.log
+Check for trailing commas or malformed strings
+Issue: Validator shows false positives
+
+Solution: Review masked format - ensure it doesn't match detection patterns
+Adjust masking to use non-numeric characters (X instead of *)
+Issue: Hash collisions or inconsistent hashing
+
+Solution: Ensure same salt/algorithm used consistently
+Verify patient_id is string before hashing
+Conclusion
+You have successfully implemented a HIPAA-compliant logging system for healthcare applications. Key accomplishments:
+
+PII Masking: Implemented multiple masking strategies for different data types
+Log Sanitization: Created automated pipeline to clean sensitive data from logs
+Privacy Enforcement: Built validation system to detect compliance violations
+Production Integration: Developed reusable logger for real applications
+Real-World Significance: Healthcare organizations face severe penalties for HIPAA violations (up to $50,000 per violation). This lab demonstrates essential DevOps practices for:
+
+Protecting patient privacy in production systems
+Meeting regulatory compliance requirements
+Implementing defense-in-depth for sensitive data
+Creating auditable logging systems
+Next Steps: Consider extending this lab by implementing log rotation, encrypted log storage, or integration with SIEM systems for security monitoring.
