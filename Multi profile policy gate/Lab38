@@ -1,0 +1,542 @@
+ Multi-Profile Policy Gate
+Prerequisites
+Basic Linux command-line skills
+Understanding of YAML/JSON configuration formats
+Familiarity with HTTP concepts and REST APIs
+Basic knowledge of policy enforcement patterns
+Text editor experience (vim, nano, or similar)
+Learning Objectives
+By completing this lab, you will:
+
+Implement a multi-profile policy enforcement system
+Configure dynamic policy switching based on industry profiles
+Build a policy gate that enforces rules for different business contexts
+Understand how to manage multiple compliance requirements in a single system
+Environment Setup
+You'll be working on a bare-metal Linux machine provided by Al Nafi. Click the "Start Lab" button to provision your environment.
+
+Install Required Tools
+# Update package manager
+sudo apt update
+
+# Install Python and pip
+sudo apt install -y python3 python3-pip python3-venv
+
+# Install additional utilities
+sudo apt install -y curl jq git
+Create Project Directory
+mkdir -p ~/policy-gate-lab
+cd ~/policy-gate-lab
+Task 1: Build the Multi-Profile Policy Engine
+Step 1: Create Policy Configuration Files
+Create industry-specific policy profiles:
+
+mkdir -p config/profiles
+Healthcare Profile (config/profiles/healthcare.yaml):
+
+profile:
+  name: healthcare
+  industry: HIPAA-compliant
+  rules:
+    - id: data_encryption
+      enabled: true
+      severity: critical
+      requirement: "All PHI must be encrypted"
+    - id: access_logging
+      enabled: true
+      severity: high
+      requirement: "Log all data access"
+    - id: data_retention
+      enabled: true
+      severity: medium
+      max_days: 2555
+Finance Profile (config/profiles/finance.yaml):
+
+profile:
+  name: finance
+  industry: PCI-DSS-compliant
+  rules:
+    - id: data_encryption
+      enabled: true
+      severity: critical
+      requirement: "Encrypt cardholder data"
+    - id: network_segmentation
+      enabled: true
+      severity: critical
+      requirement: "Isolate payment networks"
+    - id: access_control
+      enabled: true
+      severity: high
+      min_password_length: 12
+Retail Profile (config/profiles/retail.yaml):
+
+profile:
+  name: retail
+  industry: general-commerce
+  rules:
+    - id: data_encryption
+      enabled: true
+      severity: medium
+      requirement: "Encrypt customer PII"
+    - id: rate_limiting
+      enabled: true
+      severity: low
+      max_requests: 1000
+Step 2: Create the Policy Gate Engine
+Create policy_gate.py:
+
+#!/usr/bin/env python3
+import yaml
+import json
+from typing import Dict, List, Optional
+from dataclasses import dataclass
+from enum import Enum
+
+class Severity(Enum):
+    LOW = 1
+    MEDIUM = 2
+    HIGH = 3
+    CRITICAL = 4
+
+@dataclass
+class PolicyRule:
+    id: str
+    enabled: bool
+    severity: str
+    requirement: str
+    metadata: Dict = None
+
+class PolicyProfile:
+    def __init__(self, profile_data: Dict):
+        """
+        Initialize a policy profile from configuration data.
+        
+        Args:
+            profile_data: Dictionary containing profile configuration
+        """
+        # TODO: Extract profile name and industry
+        # TODO: Parse rules into PolicyRule objects
+        # TODO: Store rules in a dictionary keyed by rule ID
+        pass
+    
+    def get_rule(self, rule_id: str) -> Optional[PolicyRule]:
+        """
+        Retrieve a specific rule by ID.
+        
+        Args:
+            rule_id: The rule identifier
+            
+        Returns:
+            PolicyRule object or None if not found
+        """
+        # TODO: Implement rule lookup
+        pass
+    
+    def get_enabled_rules(self) -> List[PolicyRule]:
+        """
+        Get all enabled rules for this profile.
+        
+        Returns:
+            List of enabled PolicyRule objects
+        """
+        # TODO: Filter and return only enabled rules
+        pass
+
+class PolicyGate:
+    def __init__(self):
+        """Initialize the policy gate with empty profiles."""
+        self.profiles = {}
+        self.active_profile = None
+    
+    def load_profile(self, profile_path: str) -> None:
+        """
+        Load a policy profile from a YAML file.
+        
+        Args:
+            profile_path: Path to the profile YAML file
+        """
+        # TODO: Read YAML file
+        # TODO: Create PolicyProfile object
+        # TODO: Store in self.profiles dictionary
+        pass
+    
+    def switch_profile(self, profile_name: str) -> bool:
+        """
+        Switch to a different policy profile.
+        
+        Args:
+            profile_name: Name of the profile to activate
+            
+        Returns:
+            True if switch successful, False otherwise
+        """
+        # TODO: Validate profile exists
+        # TODO: Set self.active_profile
+        # TODO: Return success status
+        pass
+    
+    def enforce_policy(self, request_data: Dict) -> Dict:
+        """
+        Enforce active profile policies on a request.
+        
+        Args:
+            request_data: Dictionary containing request information
+            
+        Returns:
+            Dictionary with enforcement results
+        """
+        # TODO: Check if profile is active
+        # TODO: Iterate through enabled rules
+        # TODO: Apply rule checks based on request_data
+        # TODO: Return enforcement results with violations
+        pass
+    
+    def get_active_profile_info(self) -> Dict:
+        """
+        Get information about the currently active profile.
+        
+        Returns:
+            Dictionary with profile details
+        """
+        # TODO: Return active profile metadata
+        pass
+
+# Starter implementation hints
+def main():
+    gate = PolicyGate()
+    
+    # TODO: Load all profiles from config/profiles/
+    # TODO: Implement profile switching logic
+    # TODO: Test enforcement with sample requests
+    
+    pass
+
+if __name__ == "__main__":
+    main()
+Step 3: Implement the Policy Gate
+Complete the PolicyGate class implementation. Key requirements:
+
+Load YAML profiles correctly
+Parse rules with all attributes
+Implement profile switching
+Create enforcement logic that checks:
+Data encryption requirements
+Access control rules
+Rate limiting (if applicable)
+Logging requirements
+Hint for enforcement logic:
+
+def check_encryption_rule(self, request_data: Dict, rule: PolicyRule) -> bool:
+    """
+    Check if data encryption requirements are met.
+    
+    Args:
+        request_data: Request containing 'encrypted' field
+        rule: The encryption rule to enforce
+        
+    Returns:
+        True if compliant, False otherwise
+    """
+    # TODO: Implement encryption check
+    pass
+Task 2: Dynamic Policy Enforcement System
+Step 1: Create Configuration Switcher
+Create config_manager.py:
+
+#!/usr/bin/env python3
+import os
+import json
+from typing import Optional
+
+class ConfigManager:
+    def __init__(self, config_dir: str = "config"):
+        """
+        Initialize configuration manager.
+        
+        Args:
+            config_dir: Directory containing configuration files
+        """
+        self.config_dir = config_dir
+        self.current_config_file = os.path.join(config_dir, "active_profile.json")
+    
+    def set_active_profile(self, profile_name: str) -> None:
+        """
+        Set the active profile in configuration.
+        
+        Args:
+            profile_name: Name of profile to activate
+        """
+        # TODO: Write profile name to active_profile.json
+        # TODO: Include timestamp of switch
+        pass
+    
+    def get_active_profile(self) -> Optional[str]:
+        """
+        Retrieve the currently active profile name.
+        
+        Returns:
+            Profile name or None if not set
+        """
+        # TODO: Read from active_profile.json
+        # TODO: Return profile name
+        pass
+    
+    def list_available_profiles(self) -> list:
+        """
+        List all available profile files.
+        
+        Returns:
+            List of profile names
+        """
+        # TODO: Scan config/profiles/ directory
+        # TODO: Return list of .yaml files (without extension)
+        pass
+
+# TODO: Implement helper functions for profile validation
+Step 2: Build the API Gateway
+Create api_gateway.py:
+
+#!/usr/bin/env python3
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import json
+from policy_gate import PolicyGate
+from config_manager import ConfigManager
+
+class PolicyGateHandler(BaseHTTPRequestHandler):
+    gate = None
+    config_mgr = None
+    
+    def do_POST(self):
+        """Handle POST requests for policy enforcement."""
+        if self.path == "/enforce":
+            # TODO: Read request body
+            # TODO: Parse JSON request data
+            # TODO: Call gate.enforce_policy()
+            # TODO: Return enforcement results
+            pass
+        
+        elif self.path == "/switch-profile":
+            # TODO: Read requested profile name
+            # TODO: Switch active profile
+            # TODO: Update config manager
+            # TODO: Return success/failure
+            pass
+    
+    def do_GET(self):
+        """Handle GET requests for status information."""
+        if self.path == "/status":
+            # TODO: Get active profile info
+            # TODO: Return as JSON
+            pass
+        
+        elif self.path == "/profiles":
+            # TODO: List available profiles
+            # TODO: Return as JSON
+            pass
+    
+    def _send_json_response(self, data: dict, status: int = 200):
+        """
+        Send JSON response.
+        
+        Args:
+            data: Dictionary to send as JSON
+            status: HTTP status code
+        """
+        # TODO: Set headers
+        # TODO: Send response
+        pass
+
+def run_server(port: int = 8080):
+    """
+    Start the policy gate API server.
+    
+    Args:
+        port: Port number to listen on
+    """
+    # TODO: Initialize PolicyGate and ConfigManager
+    # TODO: Set class variables
+    # TODO: Start HTTP server
+    pass
+
+if __name__ == "__main__":
+    run_server()
+Step 3: Create Test Client
+Create test_client.py:
+
+#!/usr/bin/env python3
+import requests
+import json
+
+class PolicyGateClient:
+    def __init__(self, base_url: str = "http://localhost:8080"):
+        self.base_url = base_url
+    
+    def switch_profile(self, profile_name: str) -> dict:
+        """
+        Switch to a different policy profile.
+        
+        Args:
+            profile_name: Target profile name
+            
+        Returns:
+            Response dictionary
+        """
+        # TODO: Send POST to /switch-profile
+        # TODO: Return parsed response
+        pass
+    
+    def enforce_request(self, request_data: dict) -> dict:
+        """
+        Submit a request for policy enforcement.
+        
+        Args:
+            request_data: Request to validate
+            
+        Returns:
+            Enforcement results
+        """
+        # TODO: Send POST to /enforce
+        # TODO: Return enforcement results
+        pass
+    
+    def get_status(self) -> dict:
+        """Get current policy gate status."""
+        # TODO: Send GET to /status
+        pass
+
+# TODO: Create test scenarios for each industry profile
+def test_healthcare_profile():
+    """Test healthcare profile enforcement."""
+    pass
+
+def test_finance_profile():
+    """Test finance profile enforcement."""
+    pass
+
+def test_retail_profile():
+    """Test retail profile enforcement."""
+    pass
+Verification
+Step 1: Start the Policy Gate Server
+# In terminal 1
+cd ~/policy-gate-lab
+python3 api_gateway.py
+Step 2: Test Profile Switching
+# In terminal 2
+cd ~/policy-gate-lab
+
+# Check available profiles
+curl http://localhost:8080/profiles
+
+# Switch to healthcare profile
+curl -X POST http://localhost:8080/switch-profile \
+  -H "Content-Type: application/json" \
+  -d '{"profile": "healthcare"}'
+
+# Verify active profile
+curl http://localhost:8080/status
+Step 3: Test Policy Enforcement
+Test Healthcare Compliance:
+
+# Non-compliant request (no encryption)
+curl -X POST http://localhost:8080/enforce \
+  -H "Content-Type: application/json" \
+  -d '{
+    "data_type": "PHI",
+    "encrypted": false,
+    "access_logged": true
+  }'
+
+# Compliant request
+curl -X POST http://localhost:8080/enforce \
+  -H "Content-Type: application/json" \
+  -d '{
+    "data_type": "PHI",
+    "encrypted": true,
+    "access_logged": true
+  }'
+Test Finance Profile:
+
+# Switch profile
+curl -X POST http://localhost:8080/switch-profile \
+  -H "Content-Type: application/json" \
+  -d '{"profile": "finance"}'
+
+# Test enforcement
+curl -X POST http://localhost:8080/enforce \
+  -H "Content-Type: application/json" \
+  -d '{
+    "data_type": "cardholder_data",
+    "encrypted": true,
+    "network_segmented": true,
+    "password_length": 14
+  }'
+Step 4: Verify Dynamic Switching
+Create a test script verify_switching.sh:
+
+#!/bin/bash
+
+echo "Testing dynamic profile switching..."
+
+# Test each profile
+for profile in healthcare finance retail; do
+    echo "Switching to $profile profile..."
+    curl -X POST http://localhost:8080/switch-profile \
+      -H "Content-Type: application/json" \
+      -d "{\"profile\": \"$profile\"}"
+    
+    echo "Current status:"
+    curl http://localhost:8080/status
+    echo ""
+done
+Run verification:
+
+chmod +x verify_switching.sh
+./verify_switching.sh
+Expected Outcomes
+Server starts without errors
+Profile switching returns success messages
+Enforcement returns violation details for non-compliant requests
+Enforcement passes for compliant requests
+Active profile changes reflected in status endpoint
+Different rules enforced based on active profile
+Troubleshooting Tips
+YAML parsing errors:
+
+Check indentation (use spaces, not tabs)
+Validate YAML syntax with python3 -c "import yaml; yaml.safe_load(open('file.yaml'))"
+Profile not switching:
+
+Verify profile file exists in config/profiles/
+Check file permissions: ls -la config/profiles/
+Ensure profile name matches filename (without .yaml)
+Enforcement not working:
+
+Verify active profile is set: curl http://localhost:8080/status
+Check request data format matches expected fields
+Review server logs for error messages
+Port already in use:
+
+Change port in api_gateway.py: run_server(port=8081)
+Or kill existing process: sudo lsof -ti:8080 | xargs kill -9
+Conclusion
+You've successfully built a multi-profile policy gate system that:
+
+Manages multiple industry-specific compliance profiles (Healthcare/HIPAA, Finance/PCI-DSS, Retail)
+Dynamically switches between policy configurations without restart
+Enforces different rule sets based on active profile
+Provides API-based policy enforcement for integration
+This pattern is critical for DevOps engineers managing multi-tenant systems, SaaS platforms serving different industries, or organizations with varying compliance requirements. The ability to switch policies dynamically enables a single system to serve multiple regulatory contexts, reducing infrastructure complexity while maintaining compliance.
+
+Key Takeaways:
+
+Configuration-driven policy management enables flexibility
+Dynamic switching supports multi-tenant architectures
+Centralized enforcement ensures consistent compliance
+API-based gates integrate easily into microservices
+Next Steps:
+
+Add policy versioning and rollback capabilities
+Implement audit logging for compliance tracking
+Create policy testing framework
+Add real-time policy updates via webhooks
