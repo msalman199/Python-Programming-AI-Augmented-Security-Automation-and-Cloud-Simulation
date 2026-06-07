@@ -1,0 +1,356 @@
+Finance Pack Audit and Approval Gate
+Prerequisites
+Basic Linux command-line knowledge
+Understanding of Git fundamentals
+Familiarity with YAML syntax
+Basic Python scripting experience
+Understanding of CI/CD concepts
+Learning Objectives
+By completing this lab, you will:
+
+Implement approval workflows for financial operations
+Configure audit logging for compliance tracking
+Enforce financial controls using automated gates
+Create approval mechanisms for budget-sensitive deployments
+Environment Setup
+You will use the bare-metal Linux machine provided through the "Start Lab" button. All tools will be installed during this lab.
+
+Install Required Tools
+# Update system packages
+sudo apt update
+
+# Install Python and pip
+sudo apt install -y python3 python3-pip git
+
+# Install required Python packages
+pip3 install pyyaml gitpython
+
+# Create lab directory
+mkdir -p ~/finance-approval-lab
+cd ~/finance-approval-lab
+Task 1: Implement Approval Workflow System
+Step 1: Create Project Structure
+# Create directory structure
+mkdir -p approval-system/{workflows,logs,config}
+cd approval-system
+
+# Initialize Git repository
+git init
+git config user.name "Lab User"
+git config user.email "user@lab.local"
+Step 2: Create Approval Configuration
+Create config/approval_rules.yaml:
+
+approval_gates:
+  - name: "budget_review"
+    threshold: 1000
+    approvers:
+      - "finance_manager"
+      - "team_lead"
+    required_approvals: 2
+    
+  - name: "infrastructure_cost"
+    threshold: 5000
+    approvers:
+      - "finance_manager"
+      - "cto"
+    required_approvals: 2
+    
+audit_settings:
+  log_directory: "logs"
+  retention_days: 90
+  log_format: "json"
+Step 3: Implement Approval Workflow Engine
+Create workflows/approval_engine.py:
+
+#!/usr/bin/env python3
+import yaml
+import json
+import os
+from datetime import datetime
+
+class ApprovalEngine:
+    def __init__(self, config_path):
+        """
+        Initialize the approval engine with configuration.
+        
+        Args:
+            config_path: Path to approval rules YAML file
+        """
+        # TODO: Load YAML configuration
+        # TODO: Initialize approval state tracking
+        pass
+    
+    def request_approval(self, request_data):
+        """
+        Submit a new approval request.
+        
+        Args:
+            request_data: Dictionary containing request details
+                - request_id: Unique identifier
+                - amount: Financial amount
+                - requester: Username
+                - description: Request description
+        
+        Returns:
+            Dictionary with request status
+        """
+        # TODO: Validate request data
+        # TODO: Determine required approval gate based on amount
+        # TODO: Create approval request record
+        # TODO: Log the request
+        pass
+    
+    def approve_request(self, request_id, approver):
+        """
+        Record an approval for a request.
+        
+        Args:
+            request_id: Request identifier
+            approver: Username of approver
+        
+        Returns:
+            Boolean indicating if request is fully approved
+        """
+        # TODO: Validate approver is authorized
+        # TODO: Record approval
+        # TODO: Check if all required approvals are met
+        # TODO: Log approval action
+        pass
+    
+    def get_request_status(self, request_id):
+        """
+        Get current status of an approval request.
+        
+        Args:
+            request_id: Request identifier
+        
+        Returns:
+            Dictionary with request status and approval progress
+        """
+        # TODO: Retrieve request details
+        # TODO: Calculate approval progress
+        # TODO: Return status information
+        pass
+
+# TODO: Add helper functions for validation and logging
+Step 4: Create Approval CLI Tool
+Create workflows/approval_cli.py:
+
+#!/usr/bin/env python3
+import sys
+import argparse
+from approval_engine import ApprovalEngine
+
+def main():
+    parser = argparse.ArgumentParser(description='Finance Approval System')
+    parser.add_argument('action', choices=['request', 'approve', 'status'])
+    parser.add_argument('--request-id', help='Request ID')
+    parser.add_argument('--amount', type=float, help='Financial amount')
+    parser.add_argument('--requester', help='Requester username')
+    parser.add_argument('--approver', help='Approver username')
+    parser.add_argument('--description', help='Request description')
+    
+    args = parser.parse_args()
+    
+    # TODO: Initialize ApprovalEngine
+    # TODO: Handle different actions (request/approve/status)
+    # TODO: Display results to user
+    pass
+
+if __name__ == '__main__':
+    main()
+Task 2: Implement Audit Logging System
+Step 1: Create Audit Logger
+Create workflows/audit_logger.py:
+
+#!/usr/bin/env python3
+import json
+import os
+from datetime import datetime
+from pathlib import Path
+
+class AuditLogger:
+    def __init__(self, log_directory):
+        """
+        Initialize audit logger.
+        
+        Args:
+            log_directory: Directory to store audit logs
+        """
+        # TODO: Create log directory if not exists
+        # TODO: Initialize log file path
+        pass
+    
+    def log_event(self, event_type, event_data):
+        """
+        Log an audit event.
+        
+        Args:
+            event_type: Type of event (request, approval, rejection)
+            event_data: Dictionary containing event details
+        """
+        # TODO: Create audit record with timestamp
+        # TODO: Add event metadata (user, IP, etc.)
+        # TODO: Write to log file in JSON format
+        # TODO: Ensure atomic write operation
+        pass
+    
+    def query_logs(self, filters=None):
+        """
+        Query audit logs with optional filters.
+        
+        Args:
+            filters: Dictionary of filter criteria
+                - start_date: Start datetime
+                - end_date: End datetime
+                - event_type: Type of event
+                - user: Username
+        
+        Returns:
+            List of matching audit records
+        """
+        # TODO: Read log file
+        # TODO: Parse JSON records
+        # TODO: Apply filters
+        # TODO: Return matching records
+        pass
+    
+    def generate_report(self, start_date, end_date):
+        """
+        Generate audit report for date range.
+        
+        Args:
+            start_date: Report start date
+            end_date: Report end date
+        
+        Returns:
+            Dictionary with report statistics
+        """
+        # TODO: Query logs for date range
+        # TODO: Calculate statistics (total requests, approvals, etc.)
+        # TODO: Generate summary report
+        pass
+
+# TODO: Add helper functions for log rotation and cleanup
+Step 2: Create Audit Query Tool
+Create workflows/audit_query.py:
+
+#!/usr/bin/env python3
+import argparse
+from datetime import datetime, timedelta
+from audit_logger import AuditLogger
+
+def main():
+    parser = argparse.ArgumentParser(description='Audit Log Query Tool')
+    parser.add_argument('--days', type=int, default=7, help='Days to look back')
+    parser.add_argument('--event-type', help='Filter by event type')
+    parser.add_argument('--user', help='Filter by username')
+    parser.add_argument('--report', action='store_true', help='Generate report')
+    
+    args = parser.parse_args()
+    
+    # TODO: Initialize AuditLogger
+    # TODO: Calculate date range
+    # TODO: Query logs with filters
+    # TODO: Display results or generate report
+    pass
+
+if __name__ == '__main__':
+    main()
+Step 3: Integrate Audit Logging with Approval System
+Update your approval_engine.py to include audit logging:
+
+# Add to ApprovalEngine class
+def _log_audit_event(self, event_type, event_data):
+    """
+    Log audit event for compliance tracking.
+    
+    Args:
+        event_type: Type of event
+        event_data: Event details
+    """
+    # TODO: Initialize AuditLogger if not exists
+    # TODO: Enrich event data with metadata
+    # TODO: Call audit logger
+    pass
+Step 4: Create Sample Test Data
+Create test_approval_flow.sh:
+
+#!/bin/bash
+
+# Test script for approval workflow
+echo "Testing Finance Approval System"
+
+# TODO: Create test requests with different amounts
+# TODO: Simulate approval process
+# TODO: Query audit logs
+# TODO: Verify approval gates work correctly
+
+# Example structure:
+# python3 workflows/approval_cli.py request --amount 1500 --requester dev_user --description "Infrastructure upgrade"
+# python3 workflows/approval_cli.py approve --request-id REQ001 --approver finance_manager
+# python3 workflows/audit_query.py --days 1
+Verification
+Verify Approval Workflow
+# Test approval request creation
+cd ~/finance-approval-lab/approval-system
+
+# Create a test request
+python3 workflows/approval_cli.py request \
+  --amount 2000 \
+  --requester test_user \
+  --description "Test deployment"
+
+# Check request status
+python3 workflows/approval_cli.py status --request-id <REQUEST_ID>
+
+# Verify approval gates are enforced
+# Requests above threshold should require multiple approvals
+Verify Audit Logging
+# Check audit logs are created
+ls -la logs/
+
+# Query recent audit events
+python3 workflows/audit_query.py --days 1
+
+# Verify log format
+cat logs/audit_*.log | python3 -m json.tool
+
+# Generate audit report
+python3 workflows/audit_query.py --report --days 7
+Expected Outcomes
+Approval requests are created with unique IDs
+Approval gates enforce threshold-based rules
+Multiple approvers are required for high-value requests
+Audit logs capture all events in JSON format
+Query tools can filter and report on audit data
+Troubleshooting Tips
+Issue: YAML configuration not loading
+
+Verify YAML syntax with python3 -c "import yaml; yaml.safe_load(open('config/approval_rules.yaml'))"
+Check file permissions
+Issue: Audit logs not writing
+
+Ensure log directory exists and is writable
+Check disk space with df -h
+Verify Python has write permissions
+Issue: Approval state not persisting
+
+Implement state storage (JSON file or SQLite)
+Ensure atomic write operations
+Add file locking for concurrent access
+Issue: Git repository issues
+
+Reinitialize with git init
+Check Git configuration with git config --list
+Conclusion
+You have successfully implemented a finance approval workflow system with audit logging capabilities. This lab demonstrated:
+
+Approval gates that enforce financial controls based on configurable thresholds
+Multi-approver workflows requiring authorization from designated personnel
+Comprehensive audit logging for compliance and tracking
+Query capabilities for audit investigation and reporting
+These patterns are essential for DevOps engineers working in regulated environments where financial controls and audit trails are mandatory. The system you built provides a foundation for integrating approval gates into CI/CD pipelines, infrastructure-as-code deployments, and cloud resource provisioning workflows.
+
+Next Steps: Integrate this approval system with your CI/CD pipeline, add webhook notifications for approval requests, or implement a web interface for approval management.
