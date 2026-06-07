@@ -1,0 +1,506 @@
+Retail Pack Deployment Gate and Rollback Trigger
+Prerequisites
+Basic Linux command line knowledge
+Understanding of Git fundamentals
+Familiarity with Docker containers
+Basic scripting experience (Bash/Python)
+Knowledge of CI/CD concepts
+Learning Objectives
+By completing this lab, you will:
+
+Implement deployment gates to protect customer-facing systems
+Configure automated health checks for production deployments
+Create automatic rollback mechanisms on deployment failure
+Build a safe deployment pipeline for retail applications
+Environment Setup
+Install Required Tools
+# Update system
+sudo apt update
+
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Install Git
+sudo apt install -y git
+
+# Install Python and pip
+sudo apt install -y python3 python3-pip
+
+# Install required Python packages
+pip3 install flask requests pyyaml
+Create Lab Directory Structure
+mkdir -p ~/retail-deployment-lab
+cd ~/retail-deployment-lab
+mkdir -p {app,deployment-scripts,config,logs}
+Task 1: Create Retail Application with Health Endpoints
+Step 1: Build the Retail Application
+Create the application file:
+
+nano app/retail_app.py
+Add the following starter code:
+
+from flask import Flask, jsonify
+import time
+import os
+
+app = Flask(__name__)
+
+# Application state
+app_state = {
+    'version': os.getenv('APP_VERSION', '1.0.0'),
+    'start_time': time.time(),
+    'healthy': True,
+    'ready': True
+}
+
+@app.route('/')
+def home():
+    return jsonify({
+        'service': 'Retail Pack API',
+        'version': app_state['version'],
+        'status': 'running'
+    })
+
+@app.route('/health')
+def health():
+    """
+    Health check endpoint for deployment gates.
+    TODO: Add logic to check database connectivity
+    TODO: Add logic to check external service dependencies
+    """
+    if not app_state['healthy']:
+        return jsonify({'status': 'unhealthy'}), 503
+    
+    # TODO: Implement additional health checks
+    return jsonify({
+        'status': 'healthy',
+        'version': app_state['version']
+    }), 200
+
+@app.route('/ready')
+def ready():
+    """
+    Readiness check endpoint.
+    TODO: Verify application is ready to serve traffic
+    """
+    uptime = time.time() - app_state['start_time']
+    
+    # TODO: Add warmup period check (e.g., minimum 5 seconds)
+    
+    if not app_state['ready']:
+        return jsonify({'status': 'not ready'}), 503
+    
+    return jsonify({
+        'status': 'ready',
+        'uptime': uptime
+    }), 200
+
+@app.route('/products')
+def products():
+    # Simulate product catalog
+    return jsonify({
+        'products': [
+            {'id': 1, 'name': 'Laptop', 'price': 999.99},
+            {'id': 2, 'name': 'Mouse', 'price': 29.99}
+        ]
+    })
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
+Step 2: Create Dockerfile
+nano app/Dockerfile
+FROM python:3.9-slim
+
+WORKDIR /app
+
+RUN pip install flask requests
+
+COPY retail_app.py .
+
+ENV APP_VERSION=1.0.0
+
+EXPOSE 5000
+
+CMD ["python", "retail_app.py"]
+Step 3: Build Initial Version
+cd app
+docker build -t retail-app:1.0.0 .
+cd ..
+Task 2: Implement Deployment Gate and Rollback System
+Step 1: Create Deployment Configuration
+nano config/deployment.yaml
+deployment:
+  app_name: retail-app
+  port: 5000
+  health_check:
+    endpoint: /health
+    timeout: 5
+    retries: 3
+    interval: 2
+  readiness_check:
+    endpoint: /ready
+    timeout: 5
+    retries: 5
+    interval: 3
+  rollback:
+    enabled: true
+    on_failure: true
+    keep_previous: true
+Step 2: Create Deployment Gate Script
+nano deployment-scripts/deploy_with_gate.py
+#!/usr/bin/env python3
+import subprocess
+import requests
+import time
+import yaml
+import sys
+import os
+
+class DeploymentGate:
+    def __init__(self, config_path):
+        with open(config_path, 'r') as f:
+            self.config = yaml.safe_load(f)['deployment']
+        self.app_name = self.config['app_name']
+        self.port = self.config['port']
+        self.current_container = None
+        self.previous_container = None
+        
+    def get_running_container(self):
+        """
+        Get currently running container ID.
+        TODO: Implement docker ps command to find running container
+        """
+        try:
+            # TODO: Execute docker ps command and parse output
+            result = subprocess.run(
+                ['docker', 'ps', '-q', '-f', f'name={self.app_name}'],
+                capture_output=True, text=True
+            )
+            return result.stdout.strip()
+        except Exception as e:
+            print(f"Error getting container: {e}")
+            return None
+    
+    def stop_container(self, container_id):
+        """Stop a container."""
+        if container_id:
+            subprocess.run(['docker', 'stop', container_id], 
+                         capture_output=True)
+    
+    def start_new_version(self, version):
+        """
+        Start new version of the application.
+        TODO: Implement docker run command with proper parameters
+        """
+        print(f"Starting new version: {version}")
+        
+        # Store current container for potential rollback
+        self.previous_container = self.get_running_container()
+        
+        if self.previous_container:
+            print(f"Stopping previous container: {self.previous_container}")
+            self.stop_container(self.previous_container)
+        
+        # TODO: Start new container with version tag
+        try:
+            result = subprocess.run([
+                'docker', 'run', '-d',
+                '--name', f'{self.app_name}',
+                '-p', f'{self.port}:{self.port}',
+                '-e', f'APP_VERSION={version}',
+                f'{self.app_name}:{version}'
+            ], capture_output=True, text=True)
+            
+            self.current_container = result.stdout.strip()
+            print(f"Started container: {self.current_container}")
+            return True
+        except Exception as e:
+            print(f"Failed to start container: {e}")
+            return False
+    
+    def health_check(self):
+        """
+        Perform health check on deployed application.
+        TODO: Implement retry logic with configurable attempts
+        """
+        config = self.config['health_check']
+        endpoint = f"http://localhost:{self.port}{config['endpoint']}"
+        
+        print(f"Performing health check on {endpoint}")
+        
+        # TODO: Implement retry loop
+        for attempt in range(config['retries']):
+            try:
+                # TODO: Make HTTP request with timeout
+                response = requests.get(endpoint, timeout=config['timeout'])
+                
+                if response.status_code == 200:
+                    print(f"Health check passed: {response.json()}")
+                    return True
+                else:
+                    print(f"Health check failed with status: {response.status_code}")
+            except Exception as e:
+                print(f"Health check attempt {attempt + 1} failed: {e}")
+            
+            # TODO: Wait before retry
+            time.sleep(config['interval'])
+        
+        return False
+    
+    def readiness_check(self):
+        """
+        Perform readiness check.
+        TODO: Verify application is ready to serve customer traffic
+        """
+        config = self.config['readiness_check']
+        endpoint = f"http://localhost:{self.port}{config['endpoint']}"
+        
+        print(f"Performing readiness check on {endpoint}")
+        
+        # TODO: Implement readiness verification
+        for attempt in range(config['retries']):
+            try:
+                response = requests.get(endpoint, timeout=config['timeout'])
+                if response.status_code == 200:
+                    print(f"Readiness check passed")
+                    return True
+            except Exception as e:
+                print(f"Readiness attempt {attempt + 1} failed: {e}")
+            
+            time.sleep(config['interval'])
+        
+        return False
+    
+    def rollback(self):
+        """
+        Rollback to previous version.
+        TODO: Implement rollback logic to restore previous container
+        """
+        print("INITIATING ROLLBACK...")
+        
+        if not self.previous_container:
+            print("No previous version to rollback to!")
+            return False
+        
+        # TODO: Stop failed container
+        if self.current_container:
+            print(f"Stopping failed container: {self.current_container}")
+            self.stop_container(self.current_container)
+            subprocess.run(['docker', 'rm', self.current_container], 
+                         capture_output=True)
+        
+        # TODO: Restart previous container
+        try:
+            print(f"Restarting previous container: {self.previous_container}")
+            subprocess.run(['docker', 'start', self.previous_container], 
+                         capture_output=True)
+            
+            # Verify rollback succeeded
+            time.sleep(3)
+            if self.health_check():
+                print("ROLLBACK SUCCESSFUL")
+                return True
+            else:
+                print("ROLLBACK FAILED - Manual intervention required")
+                return False
+        except Exception as e:
+            print(f"Rollback error: {e}")
+            return False
+    
+    def deploy(self, version):
+        """
+        Main deployment function with gates.
+        TODO: Orchestrate deployment with all safety checks
+        """
+        print(f"\n{'='*50}")
+        print(f"DEPLOYMENT GATE: Starting deployment of version {version}")
+        print(f"{'='*50}\n")
+        
+        # TODO: Start new version
+        if not self.start_new_version(version):
+            print("Failed to start new version")
+            return False
+        
+        # Wait for container to initialize
+        time.sleep(5)
+        
+        # TODO: Run health check gate
+        print("\nGATE 1: Health Check")
+        if not self.health_check():
+            print("GATE FAILED: Health check did not pass")
+            if self.config['rollback']['on_failure']:
+                self.rollback()
+            return False
+        
+        # TODO: Run readiness check gate
+        print("\nGATE 2: Readiness Check")
+        if not self.readiness_check():
+            print("GATE FAILED: Readiness check did not pass")
+            if self.config['rollback']['on_failure']:
+                self.rollback()
+            return False
+        
+        print("\n" + "="*50)
+        print("DEPLOYMENT SUCCESSFUL - All gates passed")
+        print("="*50)
+        
+        # Clean up old container if configured
+        if self.previous_container and not self.config['rollback']['keep_previous']:
+            subprocess.run(['docker', 'rm', self.previous_container], 
+                         capture_output=True)
+        
+        return True
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print("Usage: python3 deploy_with_gate.py <version>")
+        sys.exit(1)
+    
+    version = sys.argv[1]
+    gate = DeploymentGate('config/deployment.yaml')
+    
+    success = gate.deploy(version)
+    sys.exit(0 if success else 1)
+Make the script executable:
+
+chmod +x deployment-scripts/deploy_with_gate.py
+Step 3: Create a Faulty Version for Testing
+nano app/retail_app_faulty.py
+from flask import Flask, jsonify
+import time
+import os
+
+app = Flask(__name__)
+
+app_state = {
+    'version': os.getenv('APP_VERSION', '2.0.0'),
+    'start_time': time.time(),
+    'healthy': False,  # Intentionally unhealthy
+    'ready': False
+}
+
+@app.route('/')
+def home():
+    return jsonify({
+        'service': 'Retail Pack API',
+        'version': app_state['version'],
+        'status': 'running'
+    })
+
+@app.route('/health')
+def health():
+    # Always return unhealthy
+    return jsonify({'status': 'unhealthy'}), 503
+
+@app.route('/ready')
+def ready():
+    return jsonify({'status': 'not ready'}), 503
+
+@app.route('/products')
+def products():
+    return jsonify({'error': 'Service unavailable'}), 503
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
+Build the faulty version:
+
+cd app
+docker build -t retail-app:2.0.0 -f - . <<EOF
+FROM python:3.9-slim
+WORKDIR /app
+RUN pip install flask requests
+COPY retail_app_faulty.py retail_app.py
+ENV APP_VERSION=2.0.0
+EXPOSE 5000
+CMD ["python", "retail_app.py"]
+EOF
+cd ..
+Verification
+Test 1: Deploy Healthy Version
+# Deploy version 1.0.0
+python3 deployment-scripts/deploy_with_gate.py 1.0.0
+
+# Verify deployment
+curl http://localhost:5000/
+curl http://localhost:5000/health
+curl http://localhost:5000/products
+Expected output: All gates pass, application running successfully.
+
+Test 2: Deploy Faulty Version and Trigger Rollback
+# Attempt to deploy faulty version
+python3 deployment-scripts/deploy_with_gate.py 2.0.0
+
+# Verify rollback occurred
+curl http://localhost:5000/
+curl http://localhost:5000/health
+Expected output:
+
+Deployment gates fail
+Automatic rollback triggered
+Version 1.0.0 restored and serving traffic
+Test 3: Verify Logs
+# Check deployment logs
+docker logs $(docker ps -q -f name=retail-app)
+
+# Verify correct version is running
+curl http://localhost:5000/ | grep version
+Test 4: Manual Rollback Test
+# Create a rollback script for manual testing
+nano deployment-scripts/manual_rollback.py
+#!/usr/bin/env python3
+from deploy_with_gate import DeploymentGate
+
+gate = DeploymentGate('config/deployment.yaml')
+gate.previous_container = gate.get_running_container()
+gate.rollback()
+Troubleshooting Tips
+Container won't start:
+
+Check if port 5000 is already in use: sudo lsof -i :5000
+Verify Docker is running: docker ps
+Health checks timing out:
+
+Increase timeout values in config/deployment.yaml
+Check container logs: docker logs <container-id>
+Rollback not working:
+
+Ensure previous container still exists: docker ps -a
+Check if keep_previous is set to true in config
+Permission denied errors:
+
+Ensure scripts are executable: chmod +x deployment-scripts/*.py
+Verify Docker group membership: groups
+Conclusion
+You have successfully implemented a production-grade deployment gate system with automatic rollback capabilities. This lab demonstrated:
+
+Deployment Gates: Health and readiness checks that protect customer-facing systems
+Automatic Rollback: Immediate restoration of previous stable version on failure
+Safety Mechanisms: Multi-layer verification before accepting new deployments
+These patterns are critical for retail and e-commerce systems where downtime directly impacts revenue. The deployment gate ensures that only healthy versions reach customers, while automatic rollback minimizes the blast radius of failed deployments.
+
+Key Takeaways:
+
+Always implement health checks before routing traffic
+Automate rollback decisions to reduce MTTR (Mean Time To Recovery)
+Keep previous versions available for quick restoration
+Test failure scenarios regularly to validate rollback mechanisms
+Next Steps:
+
+Add monitoring and alerting integration
+Implement blue-green deployment strategies
+Add smoke tests as additional deployment gates
+Integrate with CI/CD pipelines
+Cleanup
+# Stop and remove containers
+docker stop $(docker ps -q -f name=retail-app)
+docker rm $(docker ps -aq -f name=retail-app)
+
+# Remove images
+docker rmi retail-app:1.0.0 retail-app:2.0.0
+
+# Remove lab directory
+cd ~
+rm -rf retail-deployment-lab
