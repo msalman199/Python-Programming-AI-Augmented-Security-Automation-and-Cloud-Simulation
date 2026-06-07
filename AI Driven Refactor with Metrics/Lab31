@@ -1,0 +1,485 @@
+AI-Driven Refactor with Metrics
+Prerequisites
+Basic Python programming knowledge
+Understanding of code complexity concepts
+Familiarity with Linux command line
+Basic Git operations
+Understanding of software metrics (cyclomatic complexity, maintainability)
+Learning Objectives
+By the end of this lab, you will be able to:
+
+Use AI tools to safely refactor legacy code
+Measure code complexity before and after refactoring
+Track performance improvements through metrics
+Validate refactoring changes with automated tests
+Apply DevOps best practices for code quality monitoring
+Environment Setup
+Install Required Tools
+# Update system
+sudo apt update
+
+# Install Python and pip
+sudo apt install -y python3 python3-pip python3-venv git
+
+# Create project directory
+mkdir -p ~/ai-refactor-lab
+cd ~/ai-refactor-lab
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install required packages
+pip install radon pylint pytest pytest-benchmark black isort aider-chat
+
+# Verify installations
+radon --version
+pylint --version
+pytest --version
+Task 1: Analyze Legacy Code Complexity
+Step 1: Create Legacy Code Sample
+Create a file with intentionally complex code that needs refactoring:
+
+cat > legacy_calculator.py << 'EOF'
+# TODO: This is legacy code with high complexity - DO NOT MODIFY YET
+
+def calculate_total(items, discount_code, customer_type, is_holiday):
+    total = 0
+    for item in items:
+        if item['category'] == 'electronics':
+            if item['price'] > 1000:
+                if customer_type == 'premium':
+                    if is_holiday:
+                        total += item['price'] * 0.7
+                    else:
+                        total += item['price'] * 0.8
+                else:
+                    if is_holiday:
+                        total += item['price'] * 0.85
+                    else:
+                        total += item['price'] * 0.9
+            else:
+                if customer_type == 'premium':
+                    total += item['price'] * 0.9
+                else:
+                    total += item['price'] * 0.95
+        elif item['category'] == 'clothing':
+            if discount_code == 'SUMMER':
+                if customer_type == 'premium':
+                    total += item['price'] * 0.6
+                else:
+                    total += item['price'] * 0.7
+            else:
+                if customer_type == 'premium':
+                    total += item['price'] * 0.85
+                else:
+                    total += item['price'] * 0.9
+        else:
+            if discount_code:
+                total += item['price'] * 0.9
+            else:
+                total += item['price']
+    
+    if discount_code == 'VIP20':
+        total = total * 0.8
+    
+    return total
+
+def process_order(order_data):
+    if order_data:
+        if 'items' in order_data:
+            if len(order_data['items']) > 0:
+                if 'customer' in order_data:
+                    result = calculate_total(
+                        order_data['items'],
+                        order_data.get('discount_code'),
+                        order_data['customer'].get('type'),
+                        order_data.get('is_holiday', False)
+                    )
+                    return result
+                else:
+                    return None
+            else:
+                return 0
+        else:
+            return None
+    else:
+        return None
+EOF
+Step 2: Measure Initial Complexity
+# Create metrics collection script
+cat > measure_metrics.py << 'EOF'
+import json
+import subprocess
+from radon.complexity import cc_visit
+from radon.metrics import mi_visit, h_visit
+
+def analyze_file(filename):
+    """
+    TODO: Complete this function to analyze code metrics
+    
+    Should return a dictionary with:
+    - cyclomatic_complexity: average CC
+    - maintainability_index: MI score
+    - halstead_metrics: difficulty and effort
+    """
+    with open(filename, 'r') as f:
+        code = f.read()
+    
+    # TODO: Calculate cyclomatic complexity
+    cc_results = cc_visit(code)
+    
+    # TODO: Calculate maintainability index
+    mi_score = mi_visit(code, multi=True)
+    
+    # TODO: Calculate Halstead metrics
+    halstead = h_visit(code)
+    
+    # TODO: Format and return results
+    pass
+
+def save_metrics(metrics, output_file):
+    """TODO: Save metrics to JSON file"""
+    pass
+
+if __name__ == "__main__":
+    # TODO: Implement main execution
+    pass
+EOF
+Complete the metrics script:
+
+# TODO: Implement the analyze_file function
+# Hint: Extract complexity from cc_results list
+# Hint: Average the MI scores
+# Hint: Sum Halstead difficulty and effort
+Run initial analysis:
+
+# Measure complexity with radon
+echo "=== Cyclomatic Complexity ==="
+radon cc legacy_calculator.py -s
+
+echo -e "\n=== Maintainability Index ==="
+radon mi legacy_calculator.py -s
+
+echo -e "\n=== Raw Metrics ==="
+radon raw legacy_calculator.py
+
+# Save baseline metrics
+radon cc legacy_calculator.py -j > baseline_complexity.json
+radon mi legacy_calculator.py -j > baseline_maintainability.json
+Step 3: Create Performance Benchmark
+cat > test_performance.py << 'EOF'
+import pytest
+from legacy_calculator import calculate_total, process_order
+
+# Sample test data
+SAMPLE_ITEMS = [
+    {'category': 'electronics', 'price': 1200},
+    {'category': 'clothing', 'price': 50},
+    {'category': 'books', 'price': 30}
+]
+
+def test_calculate_total_basic(benchmark):
+    """TODO: Implement benchmark test for calculate_total"""
+    # TODO: Use benchmark() to measure execution time
+    pass
+
+def test_process_order_benchmark(benchmark):
+    """TODO: Implement benchmark test for process_order"""
+    order = {
+        'items': SAMPLE_ITEMS,
+        'customer': {'type': 'premium'},
+        'discount_code': 'SUMMER',
+        'is_holiday': True
+    }
+    # TODO: Benchmark the process_order function
+    pass
+
+# TODO: Add more test cases for edge cases
+EOF
+Task 2: AI-Assisted Refactoring
+Step 1: Configure AI Refactoring Tool
+# Create aider configuration
+cat > .aider.conf.yaml << 'EOF'
+# Aider configuration for safe refactoring
+auto-commits: false
+dirty-commits: false
+attribute-author: true
+attribute-committer: false
+EOF
+
+# Initialize git repository for tracking
+git init
+git add legacy_calculator.py
+git commit -m "Initial commit: legacy code baseline"
+Step 2: Create Refactoring Prompt
+cat > refactor_instructions.md << 'EOF'
+# Refactoring Requirements
+
+## Objectives:
+1. Reduce cyclomatic complexity to < 5 per function
+2. Extract nested conditionals into separate functions
+3. Use strategy pattern for discount calculations
+4. Improve readability and maintainability
+5. Preserve all existing functionality
+
+## Constraints:
+- Do not change function signatures
+- Maintain backward compatibility
+- Add type hints
+- Add docstrings
+
+## Approach:
+1. Extract discount calculation logic into separate functions
+2. Create discount strategy classes
+3. Simplify conditional logic
+4. Use early returns to reduce nesting
+EOF
+Step 3: Perform AI-Assisted Refactoring
+Create the refactored version template:
+
+cat > refactored_calculator.py << 'EOF'
+"""
+TODO: Implement refactored version based on these guidelines:
+
+1. Create DiscountStrategy class hierarchy
+2. Extract discount calculation methods
+3. Simplify process_order with early returns
+4. Add type hints and docstrings
+"""
+
+from typing import List, Dict, Optional
+from abc import ABC, abstractmethod
+
+class DiscountStrategy(ABC):
+    """TODO: Implement abstract base class for discount strategies"""
+    
+    @abstractmethod
+    def calculate_discount(self, price: float, customer_type: str, is_holiday: bool) -> float:
+        """TODO: Define abstract method"""
+        pass
+
+class ElectronicsDiscountStrategy(DiscountStrategy):
+    """TODO: Implement electronics discount logic"""
+    
+    def calculate_discount(self, price: float, customer_type: str, is_holiday: bool) -> float:
+        # TODO: Extract electronics discount logic from legacy code
+        # Hint: Use simple if-else instead of nested conditions
+        pass
+
+class ClothingDiscountStrategy(DiscountStrategy):
+    """TODO: Implement clothing discount logic"""
+    pass
+
+class DefaultDiscountStrategy(DiscountStrategy):
+    """TODO: Implement default discount logic"""
+    pass
+
+def get_discount_strategy(category: str) -> DiscountStrategy:
+    """TODO: Factory function to return appropriate strategy"""
+    pass
+
+def calculate_total(items: List[Dict], discount_code: Optional[str], 
+                   customer_type: str, is_holiday: bool) -> float:
+    """
+    TODO: Refactor to use strategy pattern
+    
+    Steps:
+    1. Initialize total
+    2. For each item, get appropriate strategy
+    3. Apply strategy discount
+    4. Apply additional discount code if present
+    5. Return total
+    """
+    pass
+
+def process_order(order_data: Optional[Dict]) -> Optional[float]:
+    """
+    TODO: Simplify with early returns
+    
+    Steps:
+    1. Validate order_data exists
+    2. Validate items exist and not empty
+    3. Validate customer exists
+    4. Call calculate_total
+    """
+    pass
+EOF
+Step 4: Implement Refactored Code
+Students should implement the refactored version following the template above.
+
+Key implementation hints:
+
+Use dictionary mapping for discount rates
+Eliminate nested if-else with early returns
+Each strategy class should handle one category
+Use composition over complex conditionals
+Task 3: Measure and Compare Metrics
+Step 1: Analyze Refactored Code
+# Measure refactored code complexity
+echo "=== Refactored Code Metrics ==="
+radon cc refactored_calculator.py -s
+radon mi refactored_calculator.py -s
+
+# Save refactored metrics
+radon cc refactored_calculator.py -j > refactored_complexity.json
+radon mi refactored_calculator.py -j > refactored_maintainability.json
+Step 2: Create Comparison Report
+cat > compare_metrics.py << 'EOF'
+import json
+
+def load_metrics(filename):
+    """TODO: Load metrics from JSON file"""
+    pass
+
+def compare_complexity(baseline, refactored):
+    """
+    TODO: Compare complexity metrics
+    
+    Calculate:
+    - Average complexity reduction
+    - Number of functions improved
+    - Percentage improvement
+    """
+    pass
+
+def generate_report(baseline_cc, refactored_cc, baseline_mi, refactored_mi):
+    """
+    TODO: Generate comparison report
+    
+    Output should include:
+    - Complexity changes per function
+    - Overall maintainability improvement
+    - Summary statistics
+    """
+    print("=== Refactoring Impact Report ===\n")
+    
+    # TODO: Implement comparison logic
+    # TODO: Print formatted results
+    pass
+
+if __name__ == "__main__":
+    # TODO: Load all metrics files
+    # TODO: Generate and display report
+    pass
+EOF
+Step 3: Run Performance Comparison
+# Create updated performance tests
+cat > test_refactored_performance.py << 'EOF'
+import pytest
+from refactored_calculator import calculate_total, process_order
+
+SAMPLE_ITEMS = [
+    {'category': 'electronics', 'price': 1200},
+    {'category': 'clothing', 'price': 50},
+    {'category': 'books', 'price': 30}
+]
+
+def test_refactored_calculate_total(benchmark):
+    """TODO: Benchmark refactored version"""
+    pass
+
+def test_refactored_process_order(benchmark):
+    """TODO: Benchmark refactored version"""
+    pass
+
+# TODO: Add correctness tests to ensure behavior unchanged
+def test_correctness_electronics_premium_holiday():
+    """TODO: Verify refactored code produces same results"""
+    pass
+EOF
+Run benchmarks:
+
+# Run performance tests
+pytest test_performance.py --benchmark-only --benchmark-json=baseline_perf.json
+pytest test_refactored_performance.py --benchmark-only --benchmark-json=refactored_perf.json
+
+# Compare results
+python3 -m pytest --benchmark-compare=baseline_perf.json --benchmark-compare-fail=mean:10%
+Verification
+Verify Complexity Reduction
+# Check that cyclomatic complexity decreased
+echo "Checking complexity improvements..."
+
+# Extract average complexity
+baseline_cc=$(radon cc legacy_calculator.py -a | grep "Average complexity" | awk '{print $NF}')
+refactored_cc=$(radon cc refactored_calculator.py -a | grep "Average complexity" | awk '{print $NF}')
+
+echo "Baseline complexity: $baseline_cc"
+echo "Refactored complexity: $refactored_cc"
+
+# Verify maintainability improved
+echo -e "\nMaintainability Index comparison:"
+radon mi legacy_calculator.py -s
+radon mi refactored_calculator.py -s
+Verify Functional Correctness
+# Create comprehensive test suite
+cat > test_correctness.py << 'EOF'
+import pytest
+from legacy_calculator import calculate_total as legacy_calc
+from refactored_calculator import calculate_total as refactored_calc
+
+TEST_CASES = [
+    # (items, discount_code, customer_type, is_holiday)
+    ([{'category': 'electronics', 'price': 1200}], None, 'premium', True),
+    ([{'category': 'clothing', 'price': 50}], 'SUMMER', 'regular', False),
+    ([{'category': 'books', 'price': 30}], 'VIP20', 'premium', False),
+]
+
+@pytest.mark.parametrize("items,discount,customer,holiday", TEST_CASES)
+def test_refactored_matches_legacy(items, discount, customer, holiday):
+    """Verify refactored code produces identical results"""
+    legacy_result = legacy_calc(items, discount, customer, holiday)
+    refactored_result = refactored_calc(items, discount, customer, holiday)
+    assert abs(legacy_result - refactored_result) < 0.01, \
+        f"Results differ: {legacy_result} vs {refactored_result}"
+EOF
+
+# Run correctness tests
+pytest test_correctness.py -v
+Expected Outcomes
+After successful completion:
+
+Cyclomatic complexity reduced by 50-70%
+Maintainability Index increased by 20-30 points
+All functional tests pass
+Performance remains comparable or improved
+Code is more readable and maintainable
+Troubleshooting
+Issue: Aider not working
+
+# Use manual refactoring if AI tool unavailable
+# Follow the template structure in refactored_calculator.py
+Issue: Metrics show no improvement
+
+# Verify you've actually reduced nesting
+# Check that functions are smaller
+# Ensure strategy pattern is implemented correctly
+Issue: Tests failing after refactoring
+
+# Review discount calculation logic carefully
+# Use print statements to debug differences
+# Compare outputs step-by-step with legacy version
+Issue: Performance degraded
+
+# Profile the code to find bottlenecks
+python3 -m cProfile -s cumtime refactored_calculator.py
+# Consider caching strategy objects
+Conclusion
+In this lab, you have:
+
+Measured code complexity using industry-standard metrics (Radon)
+Applied AI-assisted refactoring techniques to legacy code
+Reduced cyclomatic complexity through strategic pattern application
+Validated refactoring safety through automated testing
+Compared performance metrics before and after changes
+Created a reproducible metrics pipeline for continuous monitoring
+These skills are essential for DevOps engineers maintaining large codebases, ensuring code quality gates in CI/CD pipelines, and making data-driven refactoring decisions. The metrics-driven approach demonstrated here helps justify technical debt reduction efforts and maintains code quality standards across development teams.
+
+Key Takeaways:
+
+Always measure before refactoring
+Use automated tests to ensure correctness
+Track metrics over time for continuous improvement
+AI tools assist but require human validation
+Complexity reduction directly impacts maintainability
