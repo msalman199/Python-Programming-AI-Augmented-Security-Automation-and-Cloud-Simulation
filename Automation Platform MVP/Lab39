@@ -1,0 +1,442 @@
+ Automation Platform MVP
+Prerequisites
+Basic understanding of Python programming
+Familiarity with REST APIs and HTTP methods
+Knowledge of Linux command-line operations
+Understanding of background task processing concepts
+Basic experience with JSON data structures
+Learning Objectives
+By completing this lab, you will:
+
+Build an end-to-end automation platform with CLI, API, and worker components
+Implement policy-based task execution and validation
+Integrate multiple system components into a cohesive automation solution
+Create a functional MVP for task automation and orchestration
+Environment Setup
+Your Linux machine is provided via the "Start Lab" button. You'll install all required tools during this lab.
+
+Install Required Software
+# Update system packages
+sudo apt update
+
+# Install Python 3 and pip
+sudo apt install -y python3 python3-pip python3-venv
+
+# Install Redis (message broker)
+sudo apt install -y redis-server
+
+# Start Redis service
+sudo systemctl start redis-server
+sudo systemctl enable redis-server
+
+# Verify Redis is running
+redis-cli ping
+# Should return: PONG
+Create Project Structure
+# Create project directory
+mkdir -p ~/automation-platform
+cd ~/automation-platform
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install Python dependencies
+pip install flask redis celery click pyyaml
+Setup Directory Structure
+# Create necessary directories
+mkdir -p {api,cli,workers,policies,logs}
+
+# Create configuration file
+cat > config.yaml << 'EOF'
+redis:
+  host: localhost
+  port: 6379
+  db: 0
+
+api:
+  host: 0.0.0.0
+  port: 5000
+
+workers:
+  concurrency: 2
+
+policies:
+  max_retries: 3
+  timeout: 300
+EOF
+Task 1: Build the Core Components
+Step 1: Create Policy Engine
+Create policies/policy_engine.py:
+
+import yaml
+from typing import Dict, Any, List
+
+class PolicyEngine:
+    """
+    Validates and enforces automation policies.
+    """
+    
+    def __init__(self, config_path: str = 'config.yaml'):
+        """
+        Initialize policy engine with configuration.
+        
+        Args:
+            config_path: Path to configuration file
+        """
+        # TODO: Load configuration from YAML file
+        # TODO: Initialize policy rules dictionary
+        pass
+    
+    def validate_task(self, task_data: Dict[str, Any]) -> tuple:
+        """
+        Validate task against defined policies.
+        
+        Args:
+            task_data: Dictionary containing task information
+            
+        Returns:
+            Tuple of (is_valid: bool, message: str)
+        """
+        # TODO: Check if task_type is allowed
+        # TODO: Validate required fields exist
+        # TODO: Check timeout constraints
+        # TODO: Return validation result
+        pass
+    
+    def get_retry_policy(self, task_type: str) -> int:
+        """
+        Get retry count for task type.
+        
+        Args:
+            task_type: Type of task
+            
+        Returns:
+            Number of retries allowed
+        """
+        # TODO: Return retry count from config
+        pass
+Step 2: Create Worker System
+Create workers/task_worker.py:
+
+from celery import Celery
+import time
+import yaml
+
+# TODO: Load configuration
+# TODO: Initialize Celery app with Redis broker
+
+app = Celery('automation_platform')
+
+@app.task(bind=True, max_retries=3)
+def execute_automation_task(self, task_id: str, task_type: str, 
+                           parameters: dict):
+    """
+    Execute automation task with retry logic.
+    
+    Args:
+        task_id: Unique task identifier
+        task_type: Type of automation task
+        parameters: Task execution parameters
+        
+    Returns:
+        Dictionary with execution results
+    """
+    try:
+        # TODO: Log task start
+        # TODO: Implement task execution based on task_type
+        # TODO: Handle different task types (backup, deploy, cleanup)
+        # TODO: Return success result
+        pass
+    except Exception as exc:
+        # TODO: Implement retry logic
+        # TODO: Log error and raise for retry
+        pass
+
+def start_worker():
+    """Start the Celery worker process."""
+    # TODO: Start worker with configured concurrency
+    pass
+Step 3: Build REST API
+Create api/automation_api.py:
+
+from flask import Flask, request, jsonify
+import redis
+import json
+from datetime import datetime
+
+app = Flask(__name__)
+
+# TODO: Initialize Redis connection
+# TODO: Import PolicyEngine and task_worker
+
+@app.route('/api/tasks', methods=['POST'])
+def create_task():
+    """
+    Create new automation task.
+    
+    Expected JSON body:
+    {
+        "task_type": "backup|deploy|cleanup",
+        "parameters": {...},
+        "priority": "high|medium|low"
+    }
+    """
+    # TODO: Parse request JSON
+    # TODO: Validate using PolicyEngine
+    # TODO: Generate unique task_id
+    # TODO: Queue task to Celery worker
+    # TODO: Store task metadata in Redis
+    # TODO: Return task_id and status
+    pass
+
+@app.route('/api/tasks/<task_id>', methods=['GET'])
+def get_task_status(task_id: str):
+    """
+    Retrieve task status and results.
+    
+    Args:
+        task_id: Task identifier
+    """
+    # TODO: Fetch task info from Redis
+    # TODO: Get Celery task status
+    # TODO: Return combined status information
+    pass
+
+@app.route('/api/tasks', methods=['GET'])
+def list_tasks():
+    """List all tasks with optional filtering."""
+    # TODO: Get filter parameters from query string
+    # TODO: Fetch tasks from Redis
+    # TODO: Apply filters
+    # TODO: Return task list
+    pass
+
+def start_api():
+    """Start the Flask API server."""
+    # TODO: Load configuration
+    # TODO: Start Flask app
+    pass
+Step 4: Create CLI Interface
+Create cli/automation_cli.py:
+
+import click
+import requests
+import json
+from typing import Optional
+
+API_BASE_URL = "http://localhost:5000/api"
+
+@click.group()
+def cli():
+    """Automation Platform CLI - Manage automation tasks."""
+    pass
+
+@cli.command()
+@click.option('--type', required=True, 
+              type=click.Choice(['backup', 'deploy', 'cleanup']))
+@click.option('--params', required=True, help='JSON parameters')
+@click.option('--priority', default='medium', 
+              type=click.Choice(['high', 'medium', 'low']))
+def submit(type: str, params: str, priority: str):
+    """
+    Submit new automation task.
+    
+    Example:
+        automation-cli submit --type backup --params '{"path":"/data"}' --priority high
+    """
+    # TODO: Parse parameters JSON
+    # TODO: Send POST request to API
+    # TODO: Display task_id and confirmation
+    pass
+
+@cli.command()
+@click.argument('task_id')
+def status(task_id: str):
+    """
+    Check status of automation task.
+    
+    Example:
+        automation-cli status abc-123-def
+    """
+    # TODO: Send GET request to API
+    # TODO: Format and display task status
+    pass
+
+@cli.command()
+@click.option('--status', help='Filter by status')
+@click.option('--type', help='Filter by task type')
+def list(status: Optional[str], type: Optional[str]):
+    """
+    List automation tasks with optional filters.
+    
+    Example:
+        automation-cli list --status completed --type backup
+    """
+    # TODO: Build query parameters
+    # TODO: Send GET request to API
+    # TODO: Display tasks in table format
+    pass
+
+if __name__ == '__main__':
+    cli()
+Task 2: Integration and Testing
+Step 1: Implement Core Logic
+Complete the TODO sections in each component:
+
+Policy Engine Implementation Hints:
+
+Load YAML config using yaml.safe_load()
+Check for required fields: task_type, parameters
+Validate task_type against allowed list
+Return tuple: (True, "Valid") or (False, "Error message")
+Worker Implementation Hints:
+
+Configure Celery: app.config_from_object({'broker_url': 'redis://localhost:6379/0'})
+Implement task types: backup (simulate with sleep), deploy, cleanup
+Use self.retry(exc=exc, countdown=60) for retries
+Return dict with status, timestamp, and results
+API Implementation Hints:
+
+Redis connection: redis.Redis(host='localhost', port=6379, db=0)
+Generate task_id: f"{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:8]}"
+Queue task: execute_automation_task.delay(task_id, task_type, parameters)
+Store in Redis: r.setex(f"task:{task_id}", 3600, json.dumps(task_data))
+CLI Implementation Hints:
+
+Use requests.post() and requests.get() for API calls
+Parse JSON params: json.loads(params)
+Format output with click.echo() and click.style() for colors
+Handle errors with try/except and display user-friendly messages
+Step 2: Start All Components
+Create start_platform.sh:
+
+#!/bin/bash
+
+cd ~/automation-platform
+source venv/bin/activate
+
+# Start API server in background
+python3 api/automation_api.py &
+API_PID=$!
+echo "API started with PID: $API_PID"
+
+# Start Celery worker in background
+celery -A workers.task_worker worker --loglevel=info &
+WORKER_PID=$!
+echo "Worker started with PID: $WORKER_PID"
+
+echo "Platform started. Press Ctrl+C to stop."
+wait
+chmod +x start_platform.sh
+Step 3: Test the Platform
+# Terminal 1: Start the platform
+./start_platform.sh
+
+# Terminal 2: Test with CLI
+cd ~/automation-platform
+source venv/bin/activate
+
+# Submit a backup task
+python3 cli/automation_cli.py submit \
+  --type backup \
+  --params '{"path": "/data", "destination": "/backup"}' \
+  --priority high
+
+# Check task status (use task_id from previous command)
+python3 cli/automation_cli.py status <TASK_ID>
+
+# List all tasks
+python3 cli/automation_cli.py list
+Step 4: Test with API Directly
+# Submit task via curl
+curl -X POST http://localhost:5000/api/tasks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task_type": "deploy",
+    "parameters": {"service": "web-app", "version": "1.2.3"},
+    "priority": "high"
+  }'
+
+# Get task status
+curl http://localhost:5000/api/tasks/<TASK_ID>
+
+# List all tasks
+curl http://localhost:5000/api/tasks
+Verification
+Verify Component Integration
+Policy Validation:
+# Should reject invalid task type
+curl -X POST http://localhost:5000/api/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"task_type": "invalid", "parameters": {}}'
+# Expected: Error message about invalid task type
+Worker Execution:
+# Check Celery logs
+tail -f logs/celery.log
+
+# Verify task completion in Redis
+redis-cli KEYS "task:*"
+redis-cli GET "task:<TASK_ID>"
+CLI Functionality:
+# Submit multiple tasks
+for i in {1..3}; do
+  python3 cli/automation_cli.py submit \
+    --type cleanup \
+    --params "{\"target\": \"temp-$i\"}" \
+    --priority low
+done
+
+# List and verify all tasks appear
+python3 cli/automation_cli.py list
+Expected Outcomes
+API responds on port 5000 with JSON responses
+Worker processes tasks from Redis queue
+CLI successfully submits and queries tasks
+Policy engine validates task submissions
+Tasks complete with success/failure status
+All components log activity appropriately
+Troubleshooting
+Redis Connection Issues:
+
+# Check Redis status
+sudo systemctl status redis-server
+
+# Test connection
+redis-cli ping
+Celery Worker Not Processing:
+
+# Check worker is running
+ps aux | grep celery
+
+# Restart worker with verbose logging
+celery -A workers.task_worker worker --loglevel=debug
+API Not Responding:
+
+# Check if port is in use
+sudo netstat -tlnp | grep 5000
+
+# Check Flask logs
+tail -f logs/api.log
+Import Errors:
+
+# Ensure virtual environment is activated
+source venv/bin/activate
+
+# Reinstall dependencies
+pip install --upgrade flask redis celery click pyyaml
+Conclusion
+You've built a complete automation platform MVP with:
+
+Policy Engine: Validates and enforces automation rules
+REST API: Provides HTTP interface for task management
+Worker System: Executes tasks asynchronously with retry logic
+CLI Tool: User-friendly command-line interface
+This architecture demonstrates key DevOps automation patterns: task queuing, policy enforcement, API-driven workflows, and distributed task execution. The platform can be extended with additional task types, authentication, monitoring, and scheduling capabilities for production use.
+
+Key Takeaways:
+
+Component integration requires clear interfaces and data contracts
+Message brokers (Redis) enable asynchronous task processing
+Policy engines centralize validation and business rules
+Multiple interfaces (API, CLI) serve different user needs
