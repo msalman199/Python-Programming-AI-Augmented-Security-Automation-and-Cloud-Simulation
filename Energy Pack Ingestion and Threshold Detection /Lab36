@@ -1,0 +1,313 @@
+Energy Pack Ingestion and Threshold Detection
+Prerequisites
+Basic Linux command-line proficiency
+Understanding of system metrics and monitoring concepts
+Familiarity with text editors (nano or vim)
+Basic knowledge of configuration files and log analysis
+Understanding of alerting concepts
+Learning Objectives
+By completing this lab, you will:
+
+Ingest and monitor energy consumption metrics from system data
+Configure threshold-based detection rules
+Generate automated alerts when thresholds are exceeded
+Implement a complete monitoring pipeline using open-source tools
+Environment Setup
+You will use the bare-metal Linux machine provided through the "Start Lab" button. All tools will be installed during this lab.
+
+Required Tools
+Telegraf: Metrics collection agent
+InfluxDB: Time-series database for storing metrics
+Kapacitor: Real-time streaming data processing engine for threshold detection and alerting
+Task 1: Install and Configure the Monitoring Stack
+Step 1.1: Install InfluxDB
+# Download and install InfluxDB
+wget https://dl.influxdata.com/influxdb/releases/influxdb2-2.7.4-amd64.deb
+sudo dpkg -i influxdb2-2.7.4-amd64.deb
+
+# Start InfluxDB service
+sudo systemctl start influxdb
+sudo systemctl enable influxdb
+Step 1.2: Initialize InfluxDB
+# Setup InfluxDB (use default port 8086)
+influx setup \
+  --username admin \
+  --password adminpassword123 \
+  --org energyorg \
+  --bucket energy_metrics \
+  --retention 168h \
+  --force
+Save the API token displayed after setup - you'll need it later.
+
+Step 1.3: Install Telegraf
+# Download and install Telegraf
+wget https://dl.influxdata.com/telegraf/releases/telegraf_1.29.1-1_amd64.deb
+sudo dpkg -i telegraf_1.29.1-1_amd64.deb
+Step 1.4: Configure Telegraf for Energy Metrics Collection
+Create a custom Telegraf configuration:
+
+sudo nano /etc/telegraf/telegraf.conf
+Replace the contents with this configuration template:
+
+[agent]
+  interval = "10s"
+  round_interval = true
+  metric_batch_size = 1000
+  metric_buffer_limit = 10000
+  collection_jitter = "0s"
+  flush_interval = "10s"
+  flush_jitter = "0s"
+
+[[outputs.influxdb_v2]]
+  urls = ["http://localhost:8086"]
+  token = "YOUR_API_TOKEN_HERE"
+  organization = "energyorg"
+  bucket = "energy_metrics"
+
+# CPU metrics as energy proxy
+[[inputs.cpu]]
+  percpu = true
+  totalcpu = true
+  collect_cpu_time = false
+  report_active = true
+
+# Memory metrics
+[[inputs.mem]]
+
+# Disk I/O metrics
+[[inputs.diskio]]
+
+# System load
+[[inputs.system]]
+
+# Custom energy simulation input
+[[inputs.file]]
+  files = ["/var/log/energy_data.log"]
+  data_format = "influx"
+  name_override = "energy_consumption"
+TODO: Replace YOUR_API_TOKEN_HERE with your actual InfluxDB API token from Step 1.2.
+
+Step 1.5: Create Simulated Energy Data Source
+Create a script to generate simulated energy consumption data:
+
+sudo nano /usr/local/bin/energy_simulator.sh
+Add the following script:
+
+#!/bin/bash
+
+LOG_FILE="/var/log/energy_data.log"
+sudo touch $LOG_FILE
+sudo chmod 666 $LOG_FILE
+
+while true; do
+    # TODO: Implement energy metric generation
+    # Generate random power consumption between 50-150 watts
+    POWER_WATTS=$((50 + RANDOM % 100))
+    
+    # Generate random voltage between 110-125V
+    VOLTAGE=$((110 + RANDOM % 15))
+    
+    # Calculate current (I = P/V)
+    CURRENT=$(echo "scale=2; $POWER_WATTS / $VOLTAGE" | bc)
+    
+    # TODO: Format as InfluxDB line protocol
+    # Format: measurement,tag=value field=value timestamp
+    TIMESTAMP=$(date +%s%N)
+    echo "energy_consumption,location=datacenter,rack=A1 power_watts=${POWER_WATTS}i,voltage=${VOLTAGE}i,current=${CURRENT} ${TIMESTAMP}" >> $LOG_FILE
+    
+    sleep 5
+done
+Make it executable and run in background:
+
+sudo chmod +x /usr/local/bin/energy_simulator.sh
+nohup sudo /usr/local/bin/energy_simulator.sh > /dev/null 2>&1 &
+Step 1.6: Start Telegraf
+sudo systemctl start telegraf
+sudo systemctl enable telegraf
+
+# Verify Telegraf is running
+sudo systemctl status telegraf
+Step 1.7: Verify Data Ingestion
+# Query InfluxDB to confirm data is being ingested
+influx query 'from(bucket: "energy_metrics") 
+  |> range(start: -5m) 
+  |> filter(fn: (r) => r._measurement == "energy_consumption")
+  |> limit(n: 10)' \
+  --org energyorg \
+  --token YOUR_API_TOKEN_HERE
+Expected Output: You should see recent energy consumption records with power_watts, voltage, and current fields.
+
+Task 2: Configure Threshold Detection and Alerting
+Step 2.1: Install Kapacitor
+# Download and install Kapacitor
+wget https://dl.influxdata.com/kapacitor/releases/kapacitor_1.7.0_amd64.deb
+sudo dpkg -i kapacitor_1.7.0_amd64.deb
+Step 2.2: Configure Kapacitor
+Edit Kapacitor configuration:
+
+sudo nano /etc/kapacitor/kapacitor.conf
+Update the InfluxDB section:
+
+[[influxdb]]
+  enabled = true
+  name = "energydb"
+  urls = ["http://localhost:8086"]
+  token = "YOUR_API_TOKEN_HERE"
+  organization = "energyorg"
+  default = true
+Start Kapacitor:
+
+sudo systemctl start kapacitor
+sudo systemctl enable kapacitor
+sudo systemctl status kapacitor
+Step 2.3: Create Threshold Detection Script
+Create a TICKscript for threshold-based alerting:
+
+nano ~/energy_threshold_alert.tick
+Add the following TICKscript template:
+
+// TODO: Define the data stream from InfluxDB
+stream
+    |from()
+        .measurement('energy_consumption')
+        .groupBy('location', 'rack')
+    // TODO: Create a time window for analysis
+    |window()
+        .period(30s)
+        .every(10s)
+    // TODO: Calculate mean power consumption
+    |mean('power_watts')
+        .as('avg_power')
+    // TODO: Define alert condition - trigger when average power > 120 watts
+    |alert()
+        .id('energy-threshold-alert')
+        .message('High energy consumption detected: {{ .Level }} - Average Power: {{ index .Fields "avg_power" }} watts in {{ index .Tags "location" }}/{{ index .Tags "rack" }}')
+        .warn(lambda: "avg_power" > 100)
+        .crit(lambda: "avg_power" > 120)
+        // TODO: Configure alert output to log file
+        .log('/var/log/kapacitor/energy_alerts.log')
+Student Task: Complete the TICKscript by filling in the correct parameters:
+
+Set the database and retention policy in from()
+Configure appropriate window period
+Verify threshold values match your requirements
+Step 2.4: Define and Enable the Alert Task
+# Define the task in Kapacitor
+kapacitor define energy_alert \
+  -tick ~/energy_threshold_alert.tick \
+  -type stream \
+  -dbrp energyorg.autogen
+
+# Enable the task
+kapacitor enable energy_alert
+
+# Verify task is running
+kapacitor show energy_alert
+Step 2.5: Create Alert Log Directory
+sudo mkdir -p /var/log/kapacitor
+sudo chown kapacitor:kapacitor /var/log/kapacitor
+sudo systemctl restart kapacitor
+Step 2.6: Trigger Test Alerts
+Modify the energy simulator to generate high consumption values:
+
+# Temporarily generate high power values
+for i in {1..10}; do
+    TIMESTAMP=$(date +%s%N)
+    echo "energy_consumption,location=datacenter,rack=A1 power_watts=135i,voltage=120i,current=1.125 ${TIMESTAMP}" | sudo tee -a /var/log/energy_data.log
+    sleep 2
+done
+Step 2.7: Monitor Alerts
+# Watch the alert log in real-time
+tail -f /var/log/kapacitor/energy_alerts.log
+
+# Check Kapacitor task statistics
+kapacitor stats general
+
+# List recent alerts
+kapacitor list tasks
+Verification
+Verify Data Ingestion
+# Check Telegraf is collecting metrics
+sudo journalctl -u telegraf -n 50 --no-pager
+
+# Query recent energy data
+influx query 'from(bucket: "energy_metrics") 
+  |> range(start: -10m) 
+  |> filter(fn: (r) => r._measurement == "energy_consumption")
+  |> group(columns: ["location"])
+  |> count()' \
+  --org energyorg \
+  --token YOUR_API_TOKEN_HERE
+Expected Result: Should show count of records ingested per location.
+
+Verify Threshold Detection
+# Check if alerts were generated
+cat /var/log/kapacitor/energy_alerts.log | grep -i "crit\|warn"
+
+# Verify Kapacitor task status
+kapacitor show energy_alert | grep -A 5 "Status"
+Expected Result: Alert log should contain WARNING or CRITICAL entries when power consumption exceeded thresholds.
+
+Complete System Check
+# Create verification script
+cat << 'EOF' > ~/verify_lab.sh
+#!/bin/bash
+
+echo "=== Lab 36 Verification ==="
+echo ""
+
+echo "1. Checking InfluxDB status..."
+systemctl is-active influxdb && echo "✓ InfluxDB running" || echo "✗ InfluxDB not running"
+
+echo "2. Checking Telegraf status..."
+systemctl is-active telegraf && echo "✓ Telegraf running" || echo "✗ Telegraf not running"
+
+echo "3. Checking Kapacitor status..."
+systemctl is-active kapacitor && echo "✓ Kapacitor running" || echo "✗ Kapacitor not running"
+
+echo "4. Checking energy simulator..."
+pgrep -f energy_simulator.sh > /dev/null && echo "✓ Energy simulator running" || echo "✗ Energy simulator not running"
+
+echo "5. Checking data ingestion..."
+RECORD_COUNT=$(wc -l < /var/log/energy_data.log)
+[ $RECORD_COUNT -gt 10 ] && echo "✓ Energy data generated ($RECORD_COUNT records)" || echo "✗ Insufficient data"
+
+echo "6. Checking alerts..."
+[ -f /var/log/kapacitor/energy_alerts.log ] && echo "✓ Alert log exists" || echo "✗ Alert log missing"
+
+echo ""
+echo "=== Verification Complete ==="
+EOF
+
+chmod +x ~/verify_lab.sh
+~/verify_lab.sh
+Troubleshooting Tips
+Issue: Telegraf not collecting data
+
+Check configuration syntax: telegraf --config /etc/telegraf/telegraf.conf --test
+Verify API token is correct
+Check file permissions on /var/log/energy_data.log
+Issue: No alerts generated
+
+Verify thresholds are being exceeded: Check actual power values in InfluxDB
+Review Kapacitor logs: sudo journalctl -u kapacitor -n 100
+Test TICKscript syntax: kapacitor show energy_alert
+Issue: InfluxDB connection errors
+
+Confirm InfluxDB is running: sudo systemctl status influxdb
+Verify port 8086 is listening: sudo netstat -tlnp | grep 8086
+Check token permissions in InfluxDB UI: http://localhost:8086
+Conclusion
+You have successfully implemented a complete energy monitoring pipeline with threshold-based alerting. This lab demonstrated:
+
+Data Ingestion: Configured Telegraf to collect and forward energy metrics to InfluxDB
+Threshold Detection: Implemented real-time monitoring using Kapacitor with configurable warning and critical thresholds
+Alert Generation: Created automated alerts that trigger when energy consumption exceeds defined limits
+This architecture is commonly used in DevOps environments for monitoring infrastructure health, resource utilization, and cost management. The skills learned apply directly to production monitoring systems, SRE practices, and observability platforms used in modern cloud-native applications.
+
+Key Takeaways:
+
+Time-series databases are optimal for metric storage and analysis
+Stream processing enables real-time threshold detection
+Proper alerting prevents resource waste and identifies anomalies early
+The TICK stack (Telegraf, InfluxDB, Chronograf, Kapacitor) provides a complete open-source monitoring solution
