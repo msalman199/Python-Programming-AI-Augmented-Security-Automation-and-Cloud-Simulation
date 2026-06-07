@@ -1,0 +1,335 @@
+Manufacturing Pack Telemetry Collector and Downtime Alerts
+Prerequisites
+Basic Linux command line knowledge
+Understanding of system processes and services
+Familiarity with Python programming
+Basic networking concepts (HTTP, ports)
+Text editor experience (vim, nano, or similar)
+Learning Objectives
+By completing this lab, you will:
+
+Implement a telemetry collection system for manufacturing equipment
+Build downtime detection logic using threshold monitoring
+Configure alert mechanisms for production system failures
+Deploy a monitoring solution using open-source tools
+Environment Setup
+You will use the bare-metal Linux machine provided through the "Start Lab" button. All tools will be installed during this lab.
+
+Install Required Packages
+# Update package manager
+sudo apt update
+
+# Install Python and pip
+sudo apt install -y python3 python3-pip python3-venv
+
+# Install InfluxDB (time-series database for telemetry)
+wget -q https://repos.influxdata.com/influxdata-archive_compat.key
+echo '393e8779c89ac8d958f81f942f9ad7fb82a25e133faddaf92e15b16e6ac9ce4c influxdata-archive_compat.key' | sha256sum -c && cat influxdata-archive_compat.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg > /dev/null
+echo 'deb [signed-by=/etc/apt/trusted.gpg.d/influxdata-archive_compat.gpg] https://repos.influxdata.com/debian stable main' | sudo tee /etc/apt/sources.list.d/influxdata.list
+sudo apt update && sudo apt install -y influxdb
+
+# Install Telegraf (telemetry collector)
+sudo apt install -y telegraf
+
+# Start InfluxDB
+sudo systemctl start influxdb
+sudo systemctl enable influxdb
+Create Python Virtual Environment
+# Create project directory
+mkdir -p ~/manufacturing-monitor
+cd ~/manufacturing-monitor
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install Python dependencies
+pip install influxdb-client requests
+Task 1: Configure Telemetry Collection System
+Step 1: Set Up InfluxDB Database
+# Create InfluxDB database
+influx -execute 'CREATE DATABASE manufacturing'
+influx -execute 'CREATE USER admin WITH PASSWORD "admin123" WITH ALL PRIVILEGES'
+Step 2: Create Manufacturing Equipment Simulator
+Create a file equipment_simulator.py to simulate manufacturing equipment telemetry:
+
+#!/usr/bin/env python3
+"""
+Manufacturing Equipment Simulator
+Generates realistic telemetry data for production machines
+"""
+
+import time
+import random
+from datetime import datetime
+from influxdb_client import InfluxDBClient, Point
+from influxdb_client.client.write_api import SYNCHRONOUS
+
+class EquipmentSimulator:
+    def __init__(self, equipment_id, equipment_type):
+        """
+        Initialize equipment simulator
+        
+        Args:
+            equipment_id: Unique identifier for equipment
+            equipment_type: Type of manufacturing equipment
+        """
+        self.equipment_id = equipment_id
+        self.equipment_type = equipment_type
+        self.is_running = True
+        
+        # TODO: Initialize InfluxDB client connection
+        # Use: url="http://localhost:8086", token="-", org="-"
+        self.client = None
+        self.write_api = None
+        
+    def generate_telemetry(self):
+        """
+        Generate realistic telemetry data
+        
+        Returns:
+            dict: Telemetry metrics including temperature, pressure, speed, status
+        """
+        # TODO: Implement telemetry generation logic
+        # Include: temperature (60-95°C), pressure (20-50 PSI), 
+        # speed (0-100%), status (running/idle/error)
+        # Simulate occasional downtime (5% chance)
+        pass
+    
+    def send_telemetry(self, telemetry_data):
+        """
+        Send telemetry to InfluxDB
+        
+        Args:
+            telemetry_data: Dictionary containing metrics
+        """
+        # TODO: Create InfluxDB Point with measurement name "equipment_metrics"
+        # TODO: Add tags: equipment_id, equipment_type
+        # TODO: Add fields from telemetry_data
+        # TODO: Write point to database "manufacturing"
+        pass
+    
+    def run(self, duration=300):
+        """
+        Run simulator for specified duration
+        
+        Args:
+            duration: Simulation duration in seconds
+        """
+        # TODO: Implement main simulation loop
+        # Collect and send telemetry every 5 seconds
+        pass
+
+if __name__ == "__main__":
+    # Create simulator instance
+    simulator = EquipmentSimulator("MACHINE-001", "CNC_MILL")
+    simulator.run()
+Step 3: Implement the Simulator
+Complete the TODO sections in equipment_simulator.py. Key implementation hints:
+
+Use InfluxDBClient with legacy authentication for InfluxDB 1.x
+Generate random values within realistic ranges
+Simulate downtime by setting status to "error" randomly
+Use time.sleep(5) for 5-second intervals
+Task 2: Build Downtime Detection and Alert System
+Step 1: Create Downtime Monitor
+Create downtime_monitor.py:
+
+#!/usr/bin/env python3
+"""
+Manufacturing Downtime Monitor
+Detects equipment downtime and sends alerts
+"""
+
+import time
+import requests
+from datetime import datetime, timedelta
+from influxdb_client import InfluxDBClient
+
+class DowntimeMonitor:
+    def __init__(self, check_interval=10):
+        """
+        Initialize downtime monitor
+        
+        Args:
+            check_interval: Seconds between checks
+        """
+        self.check_interval = check_interval
+        self.downtime_threshold = 30  # seconds
+        self.alert_cooldown = {}  # Track last alert time per equipment
+        
+        # TODO: Initialize InfluxDB client
+        self.client = None
+        self.query_api = None
+        
+    def query_equipment_status(self, equipment_id, time_window="1m"):
+        """
+        Query recent equipment status from InfluxDB
+        
+        Args:
+            equipment_id: Equipment identifier
+            time_window: Time window to query (e.g., "1m", "5m")
+            
+        Returns:
+            list: Recent status records
+        """
+        # TODO: Write Flux query to get last status from equipment_metrics
+        # Filter by equipment_id and time range
+        # Return status field values
+        pass
+    
+    def detect_downtime(self, equipment_id):
+        """
+        Detect if equipment is experiencing downtime
+        
+        Args:
+            equipment_id: Equipment to check
+            
+        Returns:
+            tuple: (is_down, reason)
+        """
+        # TODO: Query recent status
+        # TODO: Check if status is "error" or no data received
+        # TODO: Return True if downtime detected with reason
+        pass
+    
+    def send_alert(self, equipment_id, reason):
+        """
+        Send downtime alert
+        
+        Args:
+            equipment_id: Affected equipment
+            reason: Downtime reason
+        """
+        # TODO: Implement alert logic
+        # Check cooldown period (don't spam alerts)
+        # Log alert to file: /tmp/manufacturing_alerts.log
+        # Format: timestamp, equipment_id, reason
+        pass
+    
+    def monitor(self, equipment_list):
+        """
+        Main monitoring loop
+        
+        Args:
+            equipment_list: List of equipment IDs to monitor
+        """
+        # TODO: Implement continuous monitoring loop
+        # Check each equipment in list
+        # Detect downtime and send alerts
+        # Sleep for check_interval between iterations
+        pass
+
+if __name__ == "__main__":
+    monitor = DowntimeMonitor(check_interval=10)
+    equipment_to_monitor = ["MACHINE-001", "MACHINE-002"]
+    monitor.monitor(equipment_to_monitor)
+Step 2: Implement Alert Webhook (Optional Enhancement)
+Create alert_webhook.py for HTTP-based alerts:
+
+#!/usr/bin/env python3
+"""
+Simple webhook server to receive alerts
+"""
+
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import json
+
+class AlertHandler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        """Handle incoming alert POST requests"""
+        # TODO: Read content length and body
+        # TODO: Parse JSON alert data
+        # TODO: Print formatted alert message
+        # TODO: Send 200 OK response
+        pass
+
+if __name__ == "__main__":
+    server = HTTPServer(('localhost', 8080), AlertHandler)
+    print("Alert webhook listening on port 8080...")
+    server.serve_forever()
+Step 3: Complete Implementation
+Implement the TODO sections in both monitoring files. Key points:
+
+Use Flux query language for InfluxDB queries
+Implement cooldown logic to prevent alert spam (5-minute cooldown)
+Log alerts with timestamp, equipment ID, and reason
+Handle cases where no data is received (equipment offline)
+Verification
+Step 1: Start the Telemetry Simulator
+# Terminal 1: Run equipment simulator
+cd ~/manufacturing-monitor
+source venv/bin/activate
+python3 equipment_simulator.py
+Step 2: Verify Data Collection
+# Terminal 2: Query InfluxDB to verify data
+influx -database manufacturing -execute 'SELECT * FROM equipment_metrics ORDER BY time DESC LIMIT 10'
+Expected output should show recent telemetry records with temperature, pressure, speed, and status fields.
+
+Step 3: Start Downtime Monitor
+# Terminal 3: Run downtime monitor
+cd ~/manufacturing-monitor
+source venv/bin/activate
+python3 downtime_monitor.py
+Step 4: Verify Alert Generation
+# Terminal 4: Monitor alert log
+tail -f /tmp/manufacturing_alerts.log
+Step 5: Test Alert System
+Modify equipment_simulator.py to force downtime:
+
+# In generate_telemetry method, temporarily set:
+telemetry_data['status'] = 'error'
+Restart the simulator and verify alerts appear in the log file.
+
+Step 6: Check System Health
+# Verify InfluxDB is running
+sudo systemctl status influxdb
+
+# Check database size
+influx -execute 'SHOW DATABASES'
+
+# Count total measurements
+influx -database manufacturing -execute 'SELECT COUNT(*) FROM equipment_metrics'
+Expected Outcomes
+After completing this lab, you should have:
+
+Telemetry Collection System: Simulator generating realistic manufacturing equipment data every 5 seconds
+Time-Series Database: InfluxDB storing telemetry with proper tags and fields
+Downtime Detection: Monitor checking equipment status every 10 seconds
+Alert System: Automated alerts logged when downtime exceeds threshold
+Production-Ready Pattern: Scalable architecture for monitoring multiple machines
+Troubleshooting Tips
+InfluxDB Connection Errors:
+
+# Check if InfluxDB is running
+sudo systemctl status influxdb
+
+# Restart if needed
+sudo systemctl restart influxdb
+
+# Verify port is listening
+netstat -tlnp | grep 8086
+No Data in Database:
+
+Verify simulator is running without errors
+Check Python virtual environment is activated
+Confirm database name matches in both scripts
+Alerts Not Triggering:
+
+Verify downtime threshold settings
+Check query time windows are appropriate
+Ensure equipment IDs match between simulator and monitor
+Python Import Errors:
+
+# Reinstall dependencies
+pip install --upgrade influxdb-client requests
+Conclusion
+You have successfully built a manufacturing telemetry collection and downtime alert system using open-source tools. This lab demonstrated:
+
+Real-time telemetry collection from production equipment
+Time-series data storage and querying with InfluxDB
+Automated downtime detection using threshold monitoring
+Alert generation for production system failures
+This architecture is used in real manufacturing environments to minimize downtime, improve equipment utilization, and enable predictive maintenance. The skills learned apply directly to DevOps roles in industrial IoT, manufacturing operations, and production monitoring systems.
+
+Next Steps: Enhance the system by adding dashboard visualization with Grafana, implementing predictive maintenance algorithms, or integrating with ticketing systems for automated incident creation.
